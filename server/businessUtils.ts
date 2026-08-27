@@ -47,6 +47,29 @@ export function applyStockMovement(previousQuantity: number, delta: number) {
   return nextQuantity;
 }
 
+export function allocateBatchConsumption(availableQuantities: number[], requestedQuantity: number) {
+  if (!Number.isFinite(requestedQuantity) || requestedQuantity <= 0) throw new Error("A quantidade de saída deve ser positiva.");
+  let remaining = requestedQuantity;
+  return availableQuantities.map(availableQuantity => {
+    if (!Number.isFinite(availableQuantity) || availableQuantity < 0) throw new Error("A quantidade disponível do lote é inválida.");
+    const consumedQuantity = Math.min(remaining, availableQuantity);
+    remaining = Math.round((remaining - consumedQuantity) * 1000) / 1000;
+    return consumedQuantity;
+  });
+}
+
+export function requireBatchCoverage(availableQuantities: number[], requestedQuantity: number) {
+  const allocation = allocateBatchConsumption(availableQuantities, requestedQuantity);
+  const allocatedQuantity = Math.round(allocation.reduce((total, quantity) => total + quantity, 0) * 1000) / 1000;
+  if (allocatedQuantity < requestedQuantity) throw new Error("O saldo disponível nos lotes não cobre esta baixa de estoque.");
+  return allocation;
+}
+
+export function formatBatchConsumption(batches: Array<{ id: number; code: string | null; quantity: number }>) {
+  if (!batches.length) return "";
+  return `Lotes: ${batches.map(batch => `${batch.code || batch.id} (${batch.quantity.toFixed(3)})`).join(", ")}`;
+}
+
 export function calculateCashBalance(
   openingAmount: number,
   movements: Array<{ type: "sale" | "supply" | "withdrawal" | "adjustment" | "cancellation"; amount: number; paymentMethod?: PaymentMethod | null }>,

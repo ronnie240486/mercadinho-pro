@@ -24,7 +24,20 @@
 - [x] Criar atalho de leitura por câmera para dispositivos móveis compatíveis.
 - [x] Implementar no cadastro de produtos um fluxo verificável para leitura por leitor USB/Bluetooth, com campo focável, confirmação e feedback automático.
 - [x] Pesquisar e recomendar uma estratégia de integração fiscal compatível com o tipo de operação do mercadinho.
-- [ ] Preparar configurações empresariais e o fluxo de emissão de nota fiscal sem realizar emissões reais antes da validação fiscal.
-- [ ] Acrescentar melhorias operacionais priorizadas para compras, precificação, inventário, perdas, validade e relatórios.
+- [x] Registrar que a preparação fiscal e a emissão de nota foram adiadas por solicitação do usuário.
+- [x] Implementar controle de lotes, validade e alertas de vencimento para produtos perecíveis.
+- [x] Implementar registro de perdas e avarias por motivo, com baixa rastreável no estoque.
+- [x] Integrar a baixa de lotes às vendas, saídas e ajustes que reduzem o estoque.
+- [x] Exibir perdas com tipo, cor e identificação de lote corretos no histórico de estoque.
+- [x] Criar testes para recebimento de lote, perda e consumo de lote em movimentos de saída.
+- [x] Impedir baixas de estoque quando o saldo dos lotes rastreados não cobrir a quantidade solicitada.
+- [x] Registrar no histórico os lotes consumidos quando uma saída utilizar mais de um lote.
+- [x] Registrar os lotes consumidos em perdas sem lote previamente selecionado.
+- [x] Exibir e exportar margem bruta consolidada por produto no relatório.
+- [x] Criar teste para perdas distribuídas entre múltiplos lotes.
+- [x] Implementar contagem de inventário por código de barras e ajustes auditáveis de divergência.
+- [x] Permitir compras com múltiplos produtos, custos e fornecedor em um único recebimento.
+- [x] Implementar histórico de preço e promoções com período de vigência.
+- [x] Expandir relatórios com perdas, validade, inventário e margem por produto.
 - [x] Validar os novos recursos e atualizar a documentação do sistema.
 - [x] Manter a emissão fiscal como expansão futura, sem configuração de credenciais ou emissão de documentos nesta etapa.

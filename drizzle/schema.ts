@@ -66,6 +66,35 @@ export const products = mysqlTable(
   ],
 );
 
+export const priceHistories = mysqlTable(
+  "priceHistories",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    productId: int("productId").notNull().references(() => products.id, { onDelete: "cascade" }),
+    userId: int("userId").notNull().references(() => users.id),
+    previousSalePrice: decimal("previousSalePrice", { precision: 12, scale: 2 }).notNull(),
+    newSalePrice: decimal("newSalePrice", { precision: 12, scale: 2 }).notNull(),
+    reason: varchar("reason", { length: 255 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [index("price_histories_product_idx").on(table.productId), index("price_histories_created_idx").on(table.createdAt)],
+);
+
+export const promotions = mysqlTable(
+  "promotions",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    productId: int("productId").notNull().references(() => products.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 160 }).notNull(),
+    promotionalPrice: decimal("promotionalPrice", { precision: 12, scale: 2 }).notNull(),
+    startsOn: varchar("startsOn", { length: 10 }).notNull(),
+    endsOn: varchar("endsOn", { length: 10 }).notNull(),
+    active: boolean("active").default(true).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [index("promotions_product_idx").on(table.productId), index("promotions_period_idx").on(table.startsOn, table.endsOn)],
+);
+
 export const suppliers = mysqlTable(
   "suppliers",
   {
@@ -111,6 +140,28 @@ export const purchaseItems = mysqlTable(
     totalAmount: decimal("totalAmount", { precision: 12, scale: 2 }).notNull(),
   },
   table => [index("purchase_items_purchase_idx").on(table.purchaseId), index("purchase_items_product_idx").on(table.productId)],
+);
+
+export const productBatches = mysqlTable(
+  "productBatches",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    productId: int("productId").notNull().references(() => products.id),
+    purchaseId: int("purchaseId").references(() => purchases.id, { onDelete: "set null" }),
+    supplierId: int("supplierId").references(() => suppliers.id, { onDelete: "set null" }),
+    code: varchar("code", { length: 80 }),
+    expirationDate: varchar("expirationDate", { length: 10 }),
+    initialQuantity: decimal("initialQuantity", { precision: 12, scale: 3 }).notNull(),
+    availableQuantity: decimal("availableQuantity", { precision: 12, scale: 3 }).notNull(),
+    status: mysqlEnum("status", ["active", "depleted", "expired", "discarded"]).default("active").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [
+    index("product_batches_product_idx").on(table.productId),
+    index("product_batches_expiration_idx").on(table.expirationDate),
+    index("product_batches_status_idx").on(table.status),
+  ],
 );
 
 export const customers = mysqlTable(
@@ -208,9 +259,10 @@ export const stockMovements = mysqlTable(
     productId: int("productId").notNull().references(() => products.id),
     supplierId: int("supplierId").references(() => suppliers.id, { onDelete: "set null" }),
     purchaseId: int("purchaseId").references(() => purchases.id, { onDelete: "set null" }),
+    batchId: int("batchId").references(() => productBatches.id, { onDelete: "set null" }),
     saleId: int("saleId").references(() => sales.id, { onDelete: "set null" }),
     userId: int("userId").notNull().references(() => users.id),
-    type: mysqlEnum("type", ["entry", "outbound", "sale", "adjustment_in", "adjustment_out", "return", "cancellation"]).notNull(),
+    type: mysqlEnum("type", ["entry", "outbound", "loss", "sale", "adjustment_in", "adjustment_out", "return", "cancellation"]).notNull(),
     quantity: decimal("quantity", { precision: 12, scale: 3 }).notNull(),
     unitCost: decimal("unitCost", { precision: 12, scale: 2 }),
     previousQuantity: decimal("previousQuantity", { precision: 12, scale: 3 }).notNull(),
@@ -221,9 +273,25 @@ export const stockMovements = mysqlTable(
   table => [
     index("stock_movements_product_idx").on(table.productId),
     index("stock_movements_purchase_idx").on(table.purchaseId),
+    index("stock_movements_batch_idx").on(table.batchId),
     index("stock_movements_created_at_idx").on(table.createdAt),
     index("stock_movements_type_idx").on(table.type),
   ],
+);
+
+export const inventoryCounts = mysqlTable(
+  "inventoryCounts",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    productId: int("productId").notNull().references(() => products.id),
+    userId: int("userId").notNull().references(() => users.id),
+    systemQuantity: decimal("systemQuantity", { precision: 12, scale: 3 }).notNull(),
+    countedQuantity: decimal("countedQuantity", { precision: 12, scale: 3 }).notNull(),
+    differenceQuantity: decimal("differenceQuantity", { precision: 12, scale: 3 }).notNull(),
+    reason: varchar("reason", { length: 255 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [index("inventory_counts_product_idx").on(table.productId), index("inventory_counts_created_idx").on(table.createdAt)],
 );
 
 export const cashMovements = mysqlTable(
@@ -254,3 +322,5 @@ export type Customer = typeof customers.$inferSelect;
 export type Sale = typeof sales.$inferSelect;
 export type CashSession = typeof cashSessions.$inferSelect;
 export type Purchase = typeof purchases.$inferSelect;
+export type ProductBatch = typeof productBatches.$inferSelect;
+export type Promotion = typeof promotions.$inferSelect;

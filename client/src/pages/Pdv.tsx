@@ -25,6 +25,7 @@ export default function Pdv() {
   const utils = trpc.useUtils();
   const { data: cashSession, isLoading: cashLoading, error: cashError, refetch: refetchCash } = trpc.cash.status.useQuery(undefined, { refetchInterval: 15000 });
   const { data: customers } = trpc.catalog.customers.list.useQuery();
+  const { data: activePromotions } = trpc.pricing.active.useQuery();
   const { data: foundProducts, isFetching: searchLoading } = trpc.catalog.products.list.useQuery({ search }, { enabled: search.trim().length >= 2 });
   const subtotal = useMemo(() => cart.reduce((total, item) => total + item.quantity * item.salePrice, 0), [cart]);
   const safeDiscount = Math.min(Math.max(Number(discount) || 0, 0), subtotal);
@@ -40,6 +41,8 @@ export default function Pdv() {
 
   const addProduct = (product: NonNullable<typeof foundProducts>[number]) => {
     const stockQuantity = toNumber(product.stockQuantity);
+    const promotion = activePromotions?.find(item => item.productId === product.id);
+    const effectiveSalePrice = promotion ? toNumber(promotion.promotionalPrice) : toNumber(product.salePrice);
     if (stockQuantity <= 0) { toast.error("Este produto está sem estoque disponível."); return; }
     setCart(current => {
       const existing = current.find(item => item.id === product.id);
@@ -47,7 +50,7 @@ export default function Pdv() {
         if (existing.quantity >= stockQuantity) { toast.error("Quantidade indisponível em estoque."); return current; }
         return current.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
       }
-      return [...current, { id: product.id, name: product.name, barcode: product.barcode, unit: product.unit, salePrice: toNumber(product.salePrice), stockQuantity, quantity: 1 }];
+      return [...current, { id: product.id, name: product.name, barcode: product.barcode, unit: product.unit, salePrice: effectiveSalePrice, stockQuantity, quantity: 1 }];
     });
     setSearch("");
   };

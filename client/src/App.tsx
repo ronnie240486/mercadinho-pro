@@ -6,12 +6,16 @@ import DashboardLayout from "./components/DashboardLayout";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Cash from "./pages/Cash";
 import Home from "./pages/Home";
+import Inventory from "./pages/Inventory";
 import NotFound from "./pages/NotFound";
 import Pdv from "./pages/Pdv";
+import Pricing from "./pages/Pricing";
 import Products from "./pages/Products";
+import Purchases from "./pages/Purchases";
 import Registrations from "./pages/Registrations";
 import Reports from "./pages/Reports";
 import Stock from "./pages/Stock";
+import ShelfLife from "./pages/ShelfLife";
 
 function Router() {
   return (
@@ -19,8 +23,12 @@ function Router() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/pdv" component={Pdv} />
+        <Route path="/precos" component={Pricing} />
         <Route path="/produtos" component={Products} />
+        <Route path="/compras" component={Purchases} />
         <Route path="/estoque" component={Stock} />
+        <Route path="/inventario" component={Inventory} />
+        <Route path="/validade" component={ShelfLife} />
         <Route path="/caixa" component={Cash} />
         <Route path="/cadastros" component={Registrations} />
         <Route path="/relatorios" component={Reports} />

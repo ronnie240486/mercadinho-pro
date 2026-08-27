@@ -9,8 +9,11 @@ O **Mercadinho Pro** é um sistema web responsivo para organizar a rotina comerc
 | Visão geral | Indicadores do dia, status de caixa, alertas de estoque e linha do tempo de atividades. |
 | Produtos | Cadastro, consulta, busca, edição e exportação de produtos com códigos, categoria, preços e estoque mínimo. |
 | PDV | Busca por nome, código interno ou barras, carrinho, desconto, cliente e pagamentos por dinheiro, cartão ou PIX; leitura por leitor USB/Bluetooth e por câmera em navegadores compatíveis. |
-| Estoque | Entradas, saídas operacionais, ajustes, devoluções, histórico e alertas de saldo mínimo. |
-| Compras | Registro de compra por fornecedor, atualização automática de custo e entrada de mercadoria no estoque. |
+| Estoque | Entradas, saídas operacionais, ajustes, devoluções, perdas, histórico e alertas de saldo mínimo. |
+| Compras | Recebimento de vários produtos por fornecedor, com atualização automática de custo e entrada de mercadoria no estoque. |
+| Inventário | Contagem por leitor de código de barras, ajuste auditável e histórico de divergências. |
+| Validade e perdas | Lotes, validade, alertas de vencimento e baixa rastreável por avaria, vencimento ou descarte. |
+| Preços e promoções | Histórico de alterações, ofertas com período de vigência e aplicação automática do preço promocional no PDV. |
 | Caixa | Abertura, suprimento, sangria, acompanhamento de saldo físico e fechamento com conferência de diferença. |
 | Cadastros | Fornecedores, clientes, categorias e administração de usuários. |
 | Relatórios | Vendas, ticket médio, produtos mais vendidos, estoque em atenção, movimentações de caixa e exportação em CSV. |
@@ -30,11 +33,10 @@ O **Mercadinho Pro** é um sistema web responsivo para organizar a rotina comerc
 
 | Prioridade | Incremento |
 |---|---|
-| Alta | Leitura por câmera para códigos de barras em celulares compatíveis. |
-| Alta | Cancelamento de venda com estorno rastreável de estoque e caixa. |
-| Média | Contagem guiada de inventário e importação inicial de catálogo por planilha. |
-| Média | Impressão de comprovante e integração com equipamentos fiscais conforme a região. |
-| Evolução | Painéis por período, metas comerciais, contas a pagar e integração contábil. |
+| Alta | Cancelamento de venda com estorno rastreável de estoque, caixa e lotes. |
+| Média | Importação inicial de catálogo e recebimentos por planilha. |
+| Média | Etiquetas de preço, impressão de comprovante e integração com equipamentos fiscais quando necessário. |
+| Evolução | Metas comerciais, contas a pagar, contas a receber e integração contábil. |
 
 ## Evolução operacional priorizada
 

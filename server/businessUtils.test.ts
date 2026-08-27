@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyStockMovement, calculateCashBalance, calculateSaleTotals, hasOperationalPermission, normalizeBarcodeCode } from "./businessUtils";
+import { allocateBatchConsumption, applyStockMovement, calculateCashBalance, calculateSaleTotals, formatBatchConsumption, hasOperationalPermission, normalizeBarcodeCode, requireBatchCoverage } from "./businessUtils";
 
 describe("regras comerciais", () => {
   it("calcula subtotal, desconto e total de uma venda", () => {
@@ -26,5 +26,23 @@ describe("regras comerciais", () => {
 
   it("normaliza espaços inseridos na leitura do código de barras", () => {
     expect(normalizeBarcodeCode("  789 1234 5678 90  ")).toBe("7891234567890");
+  });
+
+  it("consome primeiro os lotes com menor saldo de validade disponível", () => {
+    expect(allocateBatchConsumption([2, 5, 4], 6)).toEqual([2, 4, 0]);
+  });
+
+  it("impede baixas por lote sem quantidade positiva", () => {
+    expect(() => allocateBatchConsumption([3], 0)).toThrow("saída");
+  });
+
+  it("impede venda ou perda maior do que o saldo nos lotes rastreados", () => {
+    expect(() => requireBatchCoverage([1, 2], 3.001)).toThrow("lotes");
+    expect(requireBatchCoverage([1, 2], 3)).toEqual([1, 2]);
+  });
+
+  it("registra todos os lotes distribuídos em uma perda sem lote selecionado", () => {
+    const allocation = requireBatchCoverage([1, 2], 3);
+    expect(formatBatchConsumption([{ id: 1, code: "A", quantity: allocation[0] }, { id: 2, code: "B", quantity: allocation[1] }])).toBe("Lotes: A (1.000), B (2.000)");
   });
 });

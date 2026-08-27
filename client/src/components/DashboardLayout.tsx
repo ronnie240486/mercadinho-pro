@@ -23,7 +23,11 @@ import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
   Boxes,
+  Truck,
+  ClipboardCheck,
   ChartNoAxesCombined,
+  BadgePercent,
+  CalendarClock,
   LayoutDashboard,
   LogOut,
   PackageSearch,
@@ -42,6 +46,10 @@ const menuItems = [
   { icon: ShoppingCart, label: "Frente de caixa", path: "/pdv" },
   { icon: PackageSearch, label: "Produtos", path: "/produtos" },
   { icon: Boxes, label: "Estoque", path: "/estoque" },
+  { icon: Truck, label: "Compras", path: "/compras" },
+  { icon: ClipboardCheck, label: "Inventário", path: "/inventario" },
+  { icon: BadgePercent, label: "Preços e promoções", path: "/precos" },
+  { icon: CalendarClock, label: "Validade e perdas", path: "/validade" },
   { icon: WalletCards, label: "Caixa", path: "/caixa" },
   { icon: UsersRound, label: "Cadastros", path: "/cadastros" },
   { icon: ChartNoAxesCombined, label: "Relatórios", path: "/relatorios" },

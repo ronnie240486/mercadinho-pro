@@ -20,7 +20,7 @@ export const catalogRouter = router({
     list: salesProcedure.input(z.object({ search: z.string().trim().max(100).optional() }).optional()).query(({ input }) => listProducts(input?.search)),
     scan: salesProcedure.input(z.object({ code: z.string().trim().min(3).max(64) })).mutation(({ input }) => findProductByCode(input.code)),
     create: stockProcedure.input(productInput).mutation(({ input }) => createProduct(input)),
-    update: stockProcedure.input(productInput.extend({ id: z.number().int().positive(), active: z.boolean() })).mutation(({ input }) => updateProduct(input)),
+    update: stockProcedure.input(productInput.extend({ id: z.number().int().positive(), active: z.boolean() })).mutation(({ ctx, input }) => updateProduct({ ...input, userId: ctx.user.id })),
   }),
   categories: router({
     list: salesProcedure.query(() => listCategories()),

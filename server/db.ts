@@ -5,7 +5,11 @@ import {
   cashSessions,
   categories,
   customers,
+  inventoryCounts,
+  priceHistories,
   products,
+  productBatches,
+  promotions,
   purchaseItems,
   purchases,
   saleItems,
@@ -16,7 +20,7 @@ import {
   type InsertUser,
   users,
 } from "../drizzle/schema";
-import { applyStockMovement, calculateCashBalance, calculateSaleTotals, normalizeBarcodeCode, type PaymentMethod } from "./businessUtils";
+import { applyStockMovement, calculateCashBalance, calculateSaleTotals, formatBatchConsumption, normalizeBarcodeCode, requireBatchCoverage, type PaymentMethod } from "./businessUtils";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -33,6 +37,10 @@ export async function getDb() {
   return _db;
 }
 
+export function setDbForTests(database: ReturnType<typeof drizzle> | null) {
+  _db = database;
+}
+
 async function requireDb() {
   const db = await getDb();
   if (!db) throw new Error("O banco de dados não está disponível no momento.");
@@ -46,6 +54,25 @@ function decimal(value: number, digits = 2) {
 
 function toNumber(value: string | number | null | undefined) {
   return Number(value ?? 0);
+}
+
+async function consumeProductBatches(tx: any, productId: number, quantity: number) {
+  const batches = await tx
+    .select()
+    .from(productBatches)
+    .where(and(eq(productBatches.productId, productId), eq(productBatches.status, "active"), sql`${productBatches.availableQuantity} > 0`))
+    .orderBy(sql`case when ${productBatches.expirationDate} is null then 1 else 0 end`, productBatches.expirationDate);
+  if (!batches.length) return [];
+  const allocation = requireBatchCoverage(batches.map((batch: { availableQuantity: string | number | null }) => toNumber(batch.availableQuantity)), quantity);
+  const consumedBatches: Array<{ id: number; code: string | null; quantity: number }> = [];
+  for (const [index, batch] of batches.entries()) {
+    const quantityFromBatch = allocation[index] ?? 0;
+    if (quantityFromBatch <= 0) continue;
+    const availableQuantity = applyStockMovement(toNumber(batch.availableQuantity), -quantityFromBatch);
+    await tx.update(productBatches).set({ availableQuantity: decimal(availableQuantity, 3), status: availableQuantity === 0 ? "depleted" : "active" }).where(eq(productBatches.id, batch.id));
+    consumedBatches.push({ id: batch.id, code: batch.code, quantity: quantityFromBatch });
+  }
+  return consumedBatches;
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {
@@ -192,6 +219,7 @@ export async function createProduct(input: {
 
 export async function updateProduct(input: {
   id: number;
+  userId: number;
   barcode?: string;
   internalCode?: string;
   name: string;
@@ -204,6 +232,8 @@ export async function updateProduct(input: {
   active: boolean;
 }) {
   const db = await requireDb();
+  const [previousProduct] = await db.select().from(products).where(eq(products.id, input.id)).limit(1);
+  if (!previousProduct) throw new Error("Produto não encontrado.");
   await db
     .update(products)
     .set({
@@ -219,6 +249,9 @@ export async function updateProduct(input: {
       active: input.active,
     })
     .where(eq(products.id, input.id));
+  if (toNumber(previousProduct.salePrice) !== input.salePrice) {
+    await db.insert(priceHistories).values({ productId: input.id, userId: input.userId, previousSalePrice: previousProduct.salePrice, newSalePrice: decimal(input.salePrice), reason: "Alteração no cadastro do produto" });
+  }
   return { success: true } as const;
 }
 
@@ -276,10 +309,12 @@ export async function listStockMovements() {
       createdAt: stockMovements.createdAt,
       productName: products.name,
       supplierName: suppliers.tradeName,
+      batchCode: productBatches.code,
     })
     .from(stockMovements)
     .innerJoin(products, eq(stockMovements.productId, products.id))
     .leftJoin(suppliers, eq(stockMovements.supplierId, suppliers.id))
+    .leftJoin(productBatches, eq(stockMovements.batchId, productBatches.id))
     .orderBy(desc(stockMovements.createdAt))
     .limit(100);
 }
@@ -302,18 +337,121 @@ export async function recordStockMovement(input: {
   const currentQuantity = applyStockMovement(previousQuantity, delta);
 
   await db.transaction(async tx => {
+    const consumedBatches = !incoming ? await consumeProductBatches(tx, product.id, input.quantity) : [];
+    const batchSummary = formatBatchConsumption(consumedBatches);
     await tx.update(products).set({ stockQuantity: decimal(currentQuantity, 3) }).where(eq(products.id, product.id));
     await tx.insert(stockMovements).values({
       productId: product.id,
       supplierId: input.supplierId ?? null,
+      batchId: consumedBatches[0]?.id ?? null,
       userId: input.userId,
       type: input.type,
       quantity: decimal(delta, 3),
       unitCost: input.unitCost === undefined ? null : decimal(input.unitCost),
       previousQuantity: decimal(previousQuantity, 3),
       currentQuantity: decimal(currentQuantity, 3),
-      reason: input.reason || null,
+      reason: [input.reason, batchSummary].filter(Boolean).join(" · ") || null,
     });
+  });
+  return { success: true, currentQuantity };
+}
+
+export async function listProductBatches() {
+  const db = await requireDb();
+  return db
+    .select({ id: productBatches.id, code: productBatches.code, expirationDate: productBatches.expirationDate, initialQuantity: productBatches.initialQuantity, availableQuantity: productBatches.availableQuantity, status: productBatches.status, createdAt: productBatches.createdAt, productId: products.id, productName: products.name, unit: products.unit, supplierName: suppliers.tradeName })
+    .from(productBatches)
+    .innerJoin(products, eq(productBatches.productId, products.id))
+    .leftJoin(suppliers, eq(productBatches.supplierId, suppliers.id))
+    .where(and(eq(productBatches.status, "active"), sql`${productBatches.availableQuantity} > 0`))
+    .orderBy(productBatches.expirationDate, products.name)
+    .limit(200);
+}
+
+export async function receiveProductBatch(input: { productId: number; supplierId?: number | null; userId: number; batchCode?: string; expirationDate?: string; quantity: number; unitCost?: number }) {
+  const db = await requireDb();
+  if (input.expirationDate && !/^\d{4}-\d{2}-\d{2}$/.test(input.expirationDate)) throw new Error("A validade deve estar no formato AAAA-MM-DD.");
+  const [product] = await db.select().from(products).where(eq(products.id, input.productId)).limit(1);
+  if (!product || !product.active) throw new Error("Produto não encontrado ou inativo.");
+  const previousQuantity = toNumber(product.stockQuantity);
+  const currentQuantity = applyStockMovement(previousQuantity, input.quantity);
+  const batchCode = input.batchCode?.trim() || `L-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
+  await db.transaction(async tx => {
+    await tx.insert(productBatches).values({ productId: product.id, supplierId: input.supplierId ?? null, code: batchCode, expirationDate: input.expirationDate || null, initialQuantity: decimal(input.quantity, 3), availableQuantity: decimal(input.quantity, 3) });
+    const [batch] = await tx.select({ id: productBatches.id }).from(productBatches).where(and(eq(productBatches.productId, product.id), eq(productBatches.code, batchCode))).orderBy(desc(productBatches.id)).limit(1);
+    if (!batch) throw new Error("Não foi possível registrar o lote recebido.");
+    await tx.update(products).set({ stockQuantity: decimal(currentQuantity, 3), ...(input.unitCost === undefined ? {} : { costPrice: decimal(input.unitCost) }) }).where(eq(products.id, product.id));
+    await tx.insert(stockMovements).values({ productId: product.id, supplierId: input.supplierId ?? null, batchId: batch.id, userId: input.userId, type: "entry", quantity: decimal(input.quantity, 3), unitCost: input.unitCost === undefined ? null : decimal(input.unitCost), previousQuantity: decimal(previousQuantity, 3), currentQuantity: decimal(currentQuantity, 3), reason: `Recebimento do lote ${batchCode}` });
+  });
+  return { success: true, currentQuantity, batchCode };
+}
+
+export async function listInventoryCounts() {
+  const db = await requireDb();
+  return db.select({ id: inventoryCounts.id, systemQuantity: inventoryCounts.systemQuantity, countedQuantity: inventoryCounts.countedQuantity, differenceQuantity: inventoryCounts.differenceQuantity, reason: inventoryCounts.reason, createdAt: inventoryCounts.createdAt, productName: products.name, unit: products.unit }).from(inventoryCounts).innerJoin(products, eq(inventoryCounts.productId, products.id)).orderBy(desc(inventoryCounts.createdAt)).limit(100);
+}
+
+export async function recordInventoryCount(input: { productId: number; userId: number; countedQuantity: number; reason?: string }) {
+  const db = await requireDb();
+  const [product] = await db.select().from(products).where(eq(products.id, input.productId)).limit(1);
+  if (!product || !product.active) throw new Error("Produto não encontrado ou inativo.");
+  const systemQuantity = toNumber(product.stockQuantity);
+  const differenceQuantity = Math.round((input.countedQuantity - systemQuantity) * 1000) / 1000;
+  await db.transaction(async tx => {
+    const consumedBatches = differenceQuantity < 0 ? await consumeProductBatches(tx, product.id, Math.abs(differenceQuantity)) : [];
+    const batchSummary = formatBatchConsumption(consumedBatches) ? ` · ${formatBatchConsumption(consumedBatches)}` : "";
+    await tx.update(products).set({ stockQuantity: decimal(input.countedQuantity, 3) }).where(eq(products.id, product.id));
+    await tx.insert(inventoryCounts).values({ productId: product.id, userId: input.userId, systemQuantity: decimal(systemQuantity, 3), countedQuantity: decimal(input.countedQuantity, 3), differenceQuantity: decimal(differenceQuantity, 3), reason: input.reason || null });
+    if (differenceQuantity !== 0) await tx.insert(stockMovements).values({ productId: product.id, batchId: consumedBatches[0]?.id ?? null, userId: input.userId, type: differenceQuantity > 0 ? "adjustment_in" : "adjustment_out", quantity: decimal(differenceQuantity, 3), previousQuantity: decimal(systemQuantity, 3), currentQuantity: decimal(input.countedQuantity, 3), reason: `Inventário${batchSummary}` });
+  });
+  return { success: true, differenceQuantity };
+}
+
+export async function listPriceHistories() {
+  const db = await requireDb();
+  return db.select({ id: priceHistories.id, previousSalePrice: priceHistories.previousSalePrice, newSalePrice: priceHistories.newSalePrice, reason: priceHistories.reason, createdAt: priceHistories.createdAt, productName: products.name }).from(priceHistories).innerJoin(products, eq(priceHistories.productId, products.id)).orderBy(desc(priceHistories.createdAt)).limit(100);
+}
+
+export async function listPromotions() {
+  const db = await requireDb();
+  return db.select({ id: promotions.id, productId: promotions.productId, name: promotions.name, promotionalPrice: promotions.promotionalPrice, startsOn: promotions.startsOn, endsOn: promotions.endsOn, active: promotions.active, productName: products.name, salePrice: products.salePrice }).from(promotions).innerJoin(products, eq(promotions.productId, products.id)).orderBy(desc(promotions.createdAt)).limit(100);
+}
+
+export async function listActivePromotions() {
+  const db = await requireDb();
+  const today = new Date().toISOString().slice(0, 10);
+  return db.select({ productId: promotions.productId, name: promotions.name, promotionalPrice: promotions.promotionalPrice }).from(promotions).where(and(eq(promotions.active, true), sql`${promotions.startsOn} <= ${today}`, sql`${promotions.endsOn} >= ${today}`));
+}
+
+export async function createPromotion(input: { productId: number; name: string; promotionalPrice: number; startsOn: string; endsOn: string }) {
+  const db = await requireDb();
+  if (input.endsOn < input.startsOn) throw new Error("A data final da promoção deve ser posterior à inicial.");
+  const [product] = await db.select().from(products).where(eq(products.id, input.productId)).limit(1);
+  if (!product || !product.active) throw new Error("Produto não encontrado ou inativo.");
+  if (input.promotionalPrice > toNumber(product.salePrice)) throw new Error("O preço promocional não pode ser maior que o preço regular.");
+  await db.insert(promotions).values({ ...input, name: input.name.trim(), promotionalPrice: decimal(input.promotionalPrice) });
+  return { success: true } as const;
+}
+
+export async function registerStockLoss(input: { productId: number; batchId?: number | null; userId: number; quantity: number; reason: string }) {
+  const db = await requireDb();
+  const [product] = await db.select().from(products).where(eq(products.id, input.productId)).limit(1);
+  if (!product || !product.active) throw new Error("Produto não encontrado ou inativo.");
+  const previousQuantity = toNumber(product.stockQuantity);
+  const currentQuantity = applyStockMovement(previousQuantity, -input.quantity);
+  await db.transaction(async tx => {
+    let consumedBatches: Array<{ id: number; code: string | null; quantity: number }> = [];
+    if (input.batchId) {
+      const [batch] = await tx.select().from(productBatches).where(and(eq(productBatches.id, input.batchId), eq(productBatches.productId, product.id))).limit(1);
+      if (!batch || batch.status !== "active") throw new Error("Lote não encontrado ou indisponível.");
+      const remainingQuantity = applyStockMovement(toNumber(batch.availableQuantity), -input.quantity);
+      await tx.update(productBatches).set({ availableQuantity: decimal(remainingQuantity, 3), status: remainingQuantity === 0 ? "discarded" : "active" }).where(eq(productBatches.id, batch.id));
+      consumedBatches = [{ id: batch.id, code: batch.code, quantity: input.quantity }];
+    } else {
+      consumedBatches = await consumeProductBatches(tx, product.id, input.quantity);
+    }
+    await tx.update(products).set({ stockQuantity: decimal(currentQuantity, 3) }).where(eq(products.id, product.id));
+    await tx.insert(stockMovements).values({ productId: product.id, batchId: consumedBatches[0]?.id ?? null, userId: input.userId, type: "loss", quantity: decimal(-input.quantity, 3), previousQuantity: decimal(previousQuantity, 3), currentQuantity: decimal(currentQuantity, 3), reason: [input.reason.trim(), formatBatchConsumption(consumedBatches)].filter(Boolean).join(" · ") });
   });
   return { success: true, currentQuantity };
 }
@@ -429,10 +567,13 @@ export async function createSale(input: {
   const productRows = await db.select().from(products).where(and(inArray(products.id, productIds), eq(products.active, true)));
   if (productRows.length !== productIds.length) throw new Error("Um ou mais produtos não estão disponíveis.");
   const productsById = new Map(productRows.map(product => [product.id, product]));
+  const activePromotions = await listActivePromotions();
+  const promotionsByProductId = new Map(activePromotions.map(promotion => [promotion.productId, promotion]));
   const detailedItems = input.items.map(item => {
     const product = productsById.get(item.productId);
     if (!product) throw new Error("Produto não encontrado.");
-    return { ...item, product, unitPrice: toNumber(product.salePrice), costPrice: toNumber(product.costPrice) };
+    const promotion = promotionsByProductId.get(product.id);
+    return { ...item, product, unitPrice: promotion ? toNumber(promotion.promotionalPrice) : toNumber(product.salePrice), costPrice: toNumber(product.costPrice) };
   });
   const totals = calculateSaleTotals(detailedItems, input.discountAmount);
   const paymentsTotal = Math.round(input.payments.reduce((total, payment) => total + payment.amount, 0) * 100) / 100;
@@ -485,16 +626,19 @@ export async function createSale(input: {
     for (const item of detailedItems) {
       const previousQuantity = toNumber(item.product.stockQuantity);
       const currentQuantity = applyStockMovement(previousQuantity, -item.quantity);
+      const consumedBatches = await consumeProductBatches(tx, item.product.id, item.quantity);
+      const batchSummary = formatBatchConsumption(consumedBatches) ? ` · ${formatBatchConsumption(consumedBatches)}` : "";
       await tx.update(products).set({ stockQuantity: decimal(currentQuantity, 3) }).where(eq(products.id, item.product.id));
       await tx.insert(stockMovements).values({
         productId: item.product.id,
         saleId: sale.id,
+        batchId: consumedBatches[0]?.id ?? null,
         userId: input.userId,
         type: "sale",
         quantity: decimal(-item.quantity, 3),
         previousQuantity: decimal(previousQuantity, 3),
         currentQuantity: decimal(currentQuantity, 3),
-        reason: `Venda ${saleCode}`,
+        reason: `Venda ${saleCode}${batchSummary}`,
       });
     }
   });
@@ -510,6 +654,8 @@ export async function getReportsOverview() {
   const db = await requireDb();
   const start = new Date();
   start.setHours(0, 0, 0, 0);
+  const today = new Date().toISOString().slice(0, 10);
+  const nextWeek = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10);
   const [salesToday] = await db.select({ total: sql<string>`coalesce(sum(${sales.totalAmount}), 0)`, count: sql<number>`count(${sales.id})` }).from(sales).where(and(eq(sales.status, "completed"), gte(sales.createdAt, start)));
   const topProducts = await db
     .select({ productName: saleItems.productName, quantity: sql<string>`coalesce(sum(${saleItems.quantity}), 0)`, revenue: sql<string>`coalesce(sum(${saleItems.totalAmount}), 0)` })
@@ -530,7 +676,12 @@ export async function getReportsOverview() {
     .from(cashMovements)
     .orderBy(desc(cashMovements.createdAt))
     .limit(10);
-  return { salesTodayAmount: toNumber(salesToday?.total), salesTodayCount: Number(salesToday?.count ?? 0), topProducts, lowStockItems, latestCashMovements };
+  const [losses] = await db.select({ quantity: sql<string>`coalesce(sum(abs(${stockMovements.quantity})), 0)`, count: sql<number>`count(${stockMovements.id})` }).from(stockMovements).where(eq(stockMovements.type, "loss"));
+  const expiringBatches = await db.select({ id: productBatches.id, productName: products.name, code: productBatches.code, expirationDate: productBatches.expirationDate, availableQuantity: productBatches.availableQuantity, unit: products.unit }).from(productBatches).innerJoin(products, eq(productBatches.productId, products.id)).where(and(eq(productBatches.status, "active"), sql`${productBatches.expirationDate} is not null`, sql`${productBatches.expirationDate} <= ${nextWeek}`)).orderBy(productBatches.expirationDate).limit(10);
+  const [inventorySummary] = await db.select({ count: sql<number>`count(${inventoryCounts.id})`, divergence: sql<string>`coalesce(sum(abs(${inventoryCounts.differenceQuantity})), 0)` }).from(inventoryCounts);
+  const [marginSummary] = await db.select({ margin: sql<string>`coalesce(sum(${saleItems.totalAmount} - (${saleItems.costPrice} * ${saleItems.quantity})), 0)` }).from(saleItems).innerJoin(sales, eq(saleItems.saleId, sales.id)).where(and(eq(sales.status, "completed"), gte(sales.createdAt, start)));
+  const marginByProduct = await db.select({ productName: saleItems.productName, revenue: sql<string>`coalesce(sum(${saleItems.totalAmount}), 0)`, margin: sql<string>`coalesce(sum(${saleItems.totalAmount} - (${saleItems.costPrice} * ${saleItems.quantity})), 0)` }).from(saleItems).innerJoin(sales, eq(saleItems.saleId, sales.id)).where(and(eq(sales.status, "completed"), gte(sales.createdAt, start))).groupBy(saleItems.productName).orderBy(desc(sql`sum(${saleItems.totalAmount} - (${saleItems.costPrice} * ${saleItems.quantity}))`)).limit(10);
+  return { salesTodayAmount: toNumber(salesToday?.total), salesTodayCount: Number(salesToday?.count ?? 0), topProducts, lowStockItems, latestCashMovements, lossCount: Number(losses?.count ?? 0), lossQuantity: toNumber(losses?.quantity), expiringBatches, inventoryCount: Number(inventorySummary?.count ?? 0), inventoryDivergence: toNumber(inventorySummary?.divergence), grossMarginToday: toNumber(marginSummary?.margin), marginByProduct, reportDate: today };
 }
 
 export async function listRecentActivity() {
