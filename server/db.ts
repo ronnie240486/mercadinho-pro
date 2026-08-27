@@ -1,6 +1,7 @@
 import { and, desc, eq, gte, inArray, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
+  accountsPayable,
   cashMovements,
   cashSessions,
   categories,
@@ -14,6 +15,8 @@ import {
   purchases,
   saleItems,
   salePayments,
+  saleReturnItems,
+  saleReturns,
   sales,
   stockMovements,
   suppliers,
@@ -650,6 +653,13 @@ export async function listRecentSales() {
   return db.select().from(sales).orderBy(desc(sales.createdAt)).limit(100);
 }
 
+export async function cancelSale(saleId: number, userId: number, reason: string) {
+  const db = await requireDb(); const [sale] = await db.select().from(sales).where(eq(sales.id, saleId)).limit(1); if (!sale || sale.status !== "completed") throw new Error("Venda não está disponível para cancelamento."); const items = await db.select().from(saleItems).where(eq(saleItems.saleId, saleId)); const payments = await db.select().from(salePayments).where(eq(salePayments.saleId, saleId));
+  await db.transaction(async tx => { await tx.update(sales).set({ status: "cancelled", cancelledAt: new Date(), notes: `${sale.notes || ""}\nCancelada: ${reason}`.trim() }).where(eq(sales.id, saleId)); for (const item of items) { const [product] = await tx.select().from(products).where(eq(products.id, item.productId)).limit(1); if (!product) continue; const previous = toNumber(product.stockQuantity), next = previous + toNumber(item.quantity); await tx.update(products).set({ stockQuantity: decimal(next, 3) }).where(eq(products.id, product.id)); await tx.insert(stockMovements).values({ productId: product.id, saleId, userId, type: "cancellation", quantity: decimal(toNumber(item.quantity), 3), previousQuantity: decimal(previous, 3), currentQuantity: decimal(next, 3), reason: `Cancelamento ${sale.code}: ${reason}` }); } if (sale.cashSessionId) await tx.insert(cashMovements).values(payments.map(payment => ({ cashSessionId: sale.cashSessionId!, saleId, userId, type: "cancellation" as const, paymentMethod: payment.method, amount: decimal(-toNumber(payment.amount)), description: `Cancelamento ${sale.code}` }))); }); return { success: true } as const;
+}
+
+export async function listSaleItemsForReturn(saleId: number) { const db = await requireDb(); return db.select({ id: saleItems.id, productId: saleItems.productId, productName: saleItems.productName, quantity: saleItems.quantity, totalAmount: saleItems.totalAmount }).from(saleItems).innerJoin(sales, eq(saleItems.saleId, sales.id)).where(and(eq(saleItems.saleId, saleId), eq(sales.status, "completed"))); }
+
 export async function getReportsOverview() {
   const db = await requireDb();
   const start = new Date();
@@ -706,5 +716,26 @@ export async function listUsers() {
 export async function updateUserRole(userId: number, role: "admin" | "manager" | "operator" | "stockist") {
   const db = await requireDb();
   await db.update(users).set({ role }).where(eq(users.id, userId));
+  return { success: true } as const;
+}
+
+export async function listAccountsPayable() {
+  const db = await requireDb();
+  const today = new Date().toISOString().slice(0, 10);
+  await db.update(accountsPayable).set({ status: "overdue" }).where(and(eq(accountsPayable.status, "open"), sql`${accountsPayable.dueDate} < ${today}`));
+  return db.select({ id: accountsPayable.id, description: accountsPayable.description, dueDate: accountsPayable.dueDate, amount: accountsPayable.amount, paidAmount: accountsPayable.paidAmount, status: accountsPayable.status, supplierName: suppliers.legalName }).from(accountsPayable).leftJoin(suppliers, eq(accountsPayable.supplierId, suppliers.id)).orderBy(accountsPayable.dueDate).limit(100);
+}
+
+export async function createAccountPayable(input: { supplierId?: number | null; description: string; dueDate: string; amount: number; notes?: string }) {
+  const db = await requireDb();
+  await db.insert(accountsPayable).values({ supplierId: input.supplierId ?? null, description: input.description.trim(), dueDate: input.dueDate, amount: decimal(input.amount), notes: input.notes || null });
+  return { success: true } as const;
+}
+
+export async function payAccountPayable(id: number) {
+  const db = await requireDb();
+  const [account] = await db.select().from(accountsPayable).where(eq(accountsPayable.id, id)).limit(1);
+  if (!account || account.status === "paid" || account.status === "cancelled") throw new Error("Conta indisponível para baixa.");
+  await db.update(accountsPayable).set({ status: "paid", paidAmount: account.amount, paidAt: new Date() }).where(eq(accountsPayable.id, id));
   return { success: true } as const;
 }

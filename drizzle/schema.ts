@@ -252,6 +252,61 @@ export const salePayments = mysqlTable(
   table => [index("sale_payments_sale_idx").on(table.saleId)],
 );
 
+export const saleReturns = mysqlTable("saleReturns", {
+  id: int("id").autoincrement().primaryKey(),
+  code: varchar("code", { length: 32 }).notNull().unique(),
+  saleId: int("saleId").notNull().references(() => sales.id),
+  cashSessionId: int("cashSessionId").references(() => cashSessions.id, { onDelete: "set null" }),
+  userId: int("userId").notNull().references(() => users.id),
+  totalAmount: decimal("totalAmount", { precision: 12, scale: 2 }).default("0.00").notNull(),
+  reason: varchar("reason", { length: 255 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => [index("sale_returns_sale_idx").on(table.saleId), index("sale_returns_created_idx").on(table.createdAt)]);
+
+export const saleReturnItems = mysqlTable("saleReturnItems", {
+  id: int("id").autoincrement().primaryKey(),
+  saleReturnId: int("saleReturnId").notNull().references(() => saleReturns.id, { onDelete: "cascade" }),
+  saleItemId: int("saleItemId").notNull().references(() => saleItems.id),
+  productId: int("productId").notNull().references(() => products.id),
+  quantity: decimal("quantity", { precision: 12, scale: 3 }).notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+}, table => [index("sale_return_items_return_idx").on(table.saleReturnId), index("sale_return_items_sale_item_idx").on(table.saleItemId)]);
+
+export const accountsPayable = mysqlTable("accountsPayable", {
+  id: int("id").autoincrement().primaryKey(),
+  supplierId: int("supplierId").references(() => suppliers.id, { onDelete: "set null" }),
+  purchaseId: int("purchaseId").references(() => purchases.id, { onDelete: "set null" }),
+  description: varchar("description", { length: 180 }).notNull(),
+  dueDate: varchar("dueDate", { length: 10 }).notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  paidAmount: decimal("paidAmount", { precision: 12, scale: 2 }).default("0.00").notNull(),
+  status: mysqlEnum("status", ["open", "paid", "overdue", "cancelled"]).default("open").notNull(),
+  paidAt: timestamp("paidAt"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => [index("accounts_payable_due_idx").on(table.dueDate), index("accounts_payable_status_idx").on(table.status)]);
+
+export const salesGoals = mysqlTable("salesGoals", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 120 }).notNull(),
+  startsOn: varchar("startsOn", { length: 10 }).notNull(),
+  endsOn: varchar("endsOn", { length: 10 }).notNull(),
+  targetAmount: decimal("targetAmount", { precision: 12, scale: 2 }).notNull(),
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => [index("sales_goals_period_idx").on(table.startsOn, table.endsOn)]);
+
+export const loyaltyTransactions = mysqlTable("loyaltyTransactions", {
+  id: int("id").autoincrement().primaryKey(),
+  customerId: int("customerId").notNull().references(() => customers.id),
+  saleId: int("saleId").references(() => sales.id, { onDelete: "set null" }),
+  userId: int("userId").notNull().references(() => users.id),
+  type: mysqlEnum("type", ["earn", "redeem", "adjustment", "reversal"]).notNull(),
+  points: int("points").notNull(),
+  description: varchar("description", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => [index("loyalty_transactions_customer_idx").on(table.customerId), index("loyalty_transactions_created_idx").on(table.createdAt)]);
+
 export const stockMovements = mysqlTable(
   "stockMovements",
   {

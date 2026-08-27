@@ -51,6 +51,7 @@ const menuItems = [
   { icon: BadgePercent, label: "Preços e promoções", path: "/precos" },
   { icon: CalendarClock, label: "Validade e perdas", path: "/validade" },
   { icon: WalletCards, label: "Caixa", path: "/caixa" },
+  { icon: WalletCards, label: "Contas a pagar", path: "/contas-a-pagar" },
   { icon: UsersRound, label: "Cadastros", path: "/cadastros" },
   { icon: ChartNoAxesCombined, label: "Relatórios", path: "/relatorios" },
 ];

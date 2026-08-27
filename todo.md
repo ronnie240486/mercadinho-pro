@@ -41,3 +41,13 @@
 - [x] Expandir relatórios com perdas, validade, inventário e margem por produto.
 - [x] Validar os novos recursos e atualizar a documentação do sistema.
 - [x] Manter a emissão fiscal como expansão futura, sem configuração de credenciais ou emissão de documentos nesta etapa.
+- [ ] Criar cancelamento de venda com estorno auditável de caixa, estoque e lotes consumidos.
+- [ ] Criar devolução parcial ou total de itens vendidos com rastreabilidade de estoque e caixa.
+- [ ] Implementar contas a pagar com fornecedores, vencimentos, baixas e status financeiro.
+- [ ] Criar central de alertas internos para estoque crítico, validade, caixa e contas próximas do vencimento.
+- [ ] Implementar importação de catálogo de produtos por arquivo CSV com validação de dados.
+- [ ] Criar impressão de etiquetas de preço com código de barras para os produtos selecionados.
+- [ ] Adicionar análise de faturamento, margem e volume de vendas por categoria.
+- [ ] Implementar metas de vendas por período com acompanhamento de desempenho.
+- [ ] Criar programa de fidelidade com pontos, extrato e uso em vendas de clientes identificados.
+- [ ] Criar testes automatizados, validação responsiva e documentação para os novos módulos.
