@@ -1,0 +1,9 @@
+:root [class*="bg-[#164e3d]"], :root [class*="bg-[#0f4032]"] { background-color: #e3aa14 !important; }
+:root [class*="text-[#164e3d]"] { color: #101820 !important; }
+:root [class*="bg-[#d8f0df]"], :root [class*="bg-emerald-100"] { background-color: #fff0c5 !important; }
+:root [class*="bg-[#e6f3e9]"], :root [class*="bg-[#edf5ee]"] { background-color: #fff6da !important; }
+:root [class*="text-emerald-800"] { color: #9a6500 !important; }
+:root [class*="border-emerald-"] { border-color: #e8bd52 !important; }
+:root [class*="focus-visible:ring-emerald-"] { --tw-ring-color: #e3aa14 !important; }
+:root [class*="hover:bg-[#f0f5f0]"], :root [class*="hover:bg-[#f3f8f3]"] { &:hover { background-color: #fff6da !important; } }
+:root [class*="bg-[#173f32]"] { background-color: #101820 !important; }

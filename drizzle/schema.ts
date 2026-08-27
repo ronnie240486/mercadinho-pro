@@ -243,6 +243,18 @@ export const saleItems = mysqlTable(
   table => [index("sale_items_sale_idx").on(table.saleId), index("sale_items_product_idx").on(table.productId)],
 );
 
+export const saleItemBatchAllocations = mysqlTable(
+  "saleItemBatchAllocations",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    saleItemId: int("saleItemId").notNull().references(() => saleItems.id, { onDelete: "cascade" }),
+    batchId: int("batchId").notNull().references(() => productBatches.id),
+    quantity: decimal("quantity", { precision: 12, scale: 3 }).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [index("sale_item_batch_allocations_item_idx").on(table.saleItemId), index("sale_item_batch_allocations_batch_idx").on(table.batchId)],
+);
+
 export const salePayments = mysqlTable(
   "salePayments",
   {
@@ -262,6 +274,7 @@ export const saleReturns = mysqlTable("saleReturns", {
   cashSessionId: int("cashSessionId").references(() => cashSessions.id, { onDelete: "set null" }),
   userId: int("userId").notNull().references(() => users.id),
   totalAmount: decimal("totalAmount", { precision: 12, scale: 2 }).default("0.00").notNull(),
+  refundMethod: mysqlEnum("refundMethod", ["cash", "debit", "credit", "pix", "voucher", "other"]).notNull(),
   reason: varchar("reason", { length: 255 }).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, table => [index("sale_returns_sale_idx").on(table.saleId), index("sale_returns_created_idx").on(table.createdAt)]);

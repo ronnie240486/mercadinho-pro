@@ -57,3 +57,9 @@
 - [x] Aplicar o ícone à identificação visual do sistema e à configuração do aplicativo.
 - [x] Implementar modo escuro com alternância persistente e contraste acessível nas telas principais.
 - [x] Validar o ícone e os temas claro e escuro em computador e celular.
+- [x] Preparar o logotipo enviado para uso otimizado nas áreas visíveis do aplicativo.
+- [x] Aplicar o logotipo oficial na entrada, navegação e favicon do Mercadinho Pro.
+- [x] Alinhar as paletas clara e escura aos tons grafite, dourado e prata da marca.
+- [x] Validar a nova identidade visual em computador e celular e publicar um checkpoint.
+- [x] Gerar ativos otimizados da marca para uso no aplicativo, incluindo favicon e versão de navegação.
+- [x] Salvar um checkpoint publicado após aplicar o logo oficial e a paleta grafite, dourado e prata.

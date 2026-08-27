@@ -20,6 +20,7 @@ import Registrations from "./pages/Registrations";
 import Reports from "./pages/Reports";
 import Stock from "./pages/Stock";
 import ShelfLife from "./pages/ShelfLife";
+import "./brand.css";
 import "./dark.css";
 
 function Router() {
