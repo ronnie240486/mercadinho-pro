@@ -3,6 +3,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { pricingRouter } from "./routers/pricing";
 import { financeRouter } from "./routers/finance";
+import { loyaltyRouter } from "./routers/loyalty";
 import { publicProcedure, router } from "./_core/trpc";
 import { cashRouter } from "./routers/cash";
 import { catalogRouter } from "./routers/catalog";
@@ -17,6 +18,7 @@ export const appRouter = router({
   system: systemRouter,
   pricing: pricingRouter,
   finance: financeRouter,
+  loyalty: loyaltyRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
