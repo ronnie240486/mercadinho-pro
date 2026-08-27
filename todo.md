@@ -1,0 +1,22 @@
+# Project TODO
+
+- [x] Definir o modelo de dados para produtos, categorias, estoque, vendas, itens de venda, caixa, fornecedores, clientes e movimentações.
+- [x] Criar a navegação responsiva com acesso ao painel, PDV, produtos, estoque, caixa, cadastros e relatórios.
+- [x] Implementar painel inicial com indicadores de vendas, caixa, produtos em falta e visão operacional recente.
+- [x] Implementar cadastro, edição, busca e consulta de produtos com código de barras, categoria, preços e estoque mínimo.
+- [x] Implementar PDV com busca por nome ou código, carrinho, totais e formas de pagamento.
+- [x] Registrar vendas com baixa automática de estoque e histórico de movimentações de mercadoria.
+- [x] Implementar entradas, ajustes e saídas de estoque com rastreabilidade operacional.
+- [x] Implementar abertura, suprimento, sangria e fechamento diário de caixa.
+- [x] Implementar cadastros de fornecedores e clientes vinculáveis a compras, estoque e vendas.
+- [x] Implementar relatórios de vendas, produtos mais vendidos, estoque baixo e movimentação de caixa.
+- [x] Aplicar autenticação e permissões para administrador, gerente, operador de caixa e estoquista.
+- [x] Criar estados de carregamento, erro e vazio para os módulos principais.
+- [x] Criar testes automatizados para regras de estoque, totalização de vendas, caixa e permissões.
+- [x] Adicionar no painel uma atividade operacional recente com vendas, estoque e caixa consultados do banco.
+- [x] Implementar saída operacional de estoque com tipo próprio, formulário e rastreabilidade completa.
+- [x] Criar o registro de compras por fornecedor e vincular a entrada de mercadorias à compra.
+- [x] Implementar relatórios reais de estoque baixo e movimentação de caixa sem itens provisórios.
+- [x] Padronizar estados de erro e ações de recuperação nos módulos principais.
+- [x] Validar visualmente a interface em resoluções de computador, tablet e celular.
+- [x] Documentar os recursos desta primeira versão e os próximos incrementos recomendados.

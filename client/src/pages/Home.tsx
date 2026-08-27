@@ -1,33 +1,32 @@
-import { useAuth } from "@/_core/hooks/useAuth";
+import { PageHeader, PrimaryAction } from "@/components/PageHeader";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { Streamdown } from 'streamdown';
+import { QueryAlert } from "@/components/QueryAlert";
+import { trpc } from "@/lib/trpc";
+import { formatCurrency } from "@/lib/format";
+import { ArrowUpRight, Banknote, Boxes, CircleAlert, Clock3, Loader2, PackageSearch, ShoppingCart, WalletCards } from "lucide-react";
+import { useLocation } from "wouter";
 
-/**
- * All content in this page are only for example, replace with your own feature implementation
- * When building pages, remember your instructions in Frontend Workflow, Frontend Best Practices, Design Guide and Common Pitfalls
- */
+function MetricCard({ label, value, detail, icon: Icon, tone = "emerald" }: { label: string; value: string; detail: string; icon: typeof ShoppingCart; tone?: "emerald" | "amber" | "slate" }) {
+  const tones = { emerald: "bg-emerald-100 text-emerald-800", amber: "bg-amber-100 text-amber-800", slate: "bg-slate-200 text-slate-700" };
+  return <article className="rounded-2xl border border-white/80 bg-white p-5 shadow-[0_10px_28px_rgba(37,59,48,0.06)]"><div className="flex items-start justify-between gap-3"><p className="text-xs font-bold uppercase tracking-[0.13em] text-slate-500">{label}</p><span className={`flex h-9 w-9 items-center justify-center rounded-xl ${tones[tone]}`}><Icon className="h-[18px] w-[18px]" /></span></div><p className="mt-5 font-serif text-[30px] font-semibold tracking-tight text-[#17332c]">{value}</p><p className="mt-1.5 text-xs leading-5 text-slate-500">{detail}</p></article>;
+}
+
 export default function Home() {
-  // The useAuth hook provides authentication state.
-  // To implement login/logout, call logout(), or start login from an event
-  // handler: onClick={() => startLogin()} (imported from "@/const"). Never call
-  // startLogin() during render (no href={startLogin()}) — it mints a one-time
-  // nonce cookie and must run only at the moment of navigation.
-  let { user, loading, error, isAuthenticated, logout } = useAuth();
+  const [, setLocation] = useLocation();
+  const { data: summary, isLoading, error: summaryError, refetch: refetchSummary } = trpc.dashboard.summary.useQuery(undefined, { refetchInterval: 30000 });
+  const { data: activity, error: activityError, refetch: refetchActivity } = trpc.dashboard.activity.useQuery(undefined, { refetchInterval: 30000 });
+  const today = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "2-digit", month: "long" }).format(new Date());
+  const salesDetail = summary?.todaySalesCount ? `${summary.todaySalesCount} venda${summary.todaySalesCount === 1 ? "" : "s"} registrada${summary.todaySalesCount === 1 ? "" : "s"} hoje` : "Nenhuma venda registrada ainda";
 
-  // If theme is switchable in App.tsx, we can implement theme toggling like this:
-  // const { theme, toggleTheme } = useTheme();
-
-  return (
-    <div className="min-h-screen flex flex-col">
-      <main>
-        {/* Example: lucide-react for icons */}
-        <Loader2 className="animate-spin" />
-        Example Page
-        {/* Example: Streamdown for markdown rendering */}
-        <Streamdown>Any **markdown** content</Streamdown>
-        <Button variant="default">Example Button</Button>
-      </main>
-    </div>
-  );
+  return <div className="mx-auto max-w-[1480px]"><PageHeader eyebrow="Visão geral" title="Bom dia, acompanhe sua operação." description={`Hoje é ${today}. Veja o retrato da loja e concentre-se no que precisa de atenção.`} action={<PrimaryAction onClick={() => setLocation("/pdv")}><ShoppingCart className="mr-2 h-4 w-4" />Nova venda</PrimaryAction>} />
+    {isLoading ? <div className="mb-4 flex items-center gap-2 text-sm text-slate-500"><Loader2 className="h-4 w-4 animate-spin" />Atualizando indicadores...</div> : null}
+    {summaryError ? <QueryAlert message="Não foi possível atualizar os indicadores agora." onRetry={() => refetchSummary()} /> : null}
+    {activityError ? <QueryAlert message="Não foi possível carregar a atividade recente." onRetry={() => refetchActivity()} /> : null}
+    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><MetricCard label="Vendas de hoje" value={formatCurrency(summary?.todaySalesAmount)} detail={salesDetail} icon={ShoppingCart} /><MetricCard label="Caixa atual" value={formatCurrency(summary?.cashBalance)} detail={summary?.cashStatus === "open" ? "Caixa aberto e em operação" : "Abra o caixa para iniciar o turno"} icon={WalletCards} tone="slate" /><MetricCard label="Estoque em atenção" value={`${summary?.lowStockCount ?? 0} itens`} detail="Produtos abaixo do estoque mínimo" icon={CircleAlert} tone="amber" /><MetricCard label="Produtos ativos" value={String(summary?.activeProductCount ?? 0)} detail="Itens disponíveis para venda" icon={PackageSearch} tone="slate" /></section>
+    <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(330px,0.8fr)]"><article className="rounded-2xl border border-white/80 bg-white p-5 shadow-[0_10px_28px_rgba(37,59,48,0.06)] sm:p-6"><div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start"><div><p className="text-xs font-bold uppercase tracking-[0.13em] text-slate-500">Desempenho</p><h2 className="mt-1 font-serif text-xl font-semibold text-[#17332c]">Vendas de hoje</h2></div><Badge className="w-fit rounded-lg bg-[#e5f3e9] px-2.5 py-1 text-xs font-semibold text-emerald-800 hover:bg-[#e5f3e9]">Atualização automática</Badge></div><div className="mt-8 flex min-h-56 flex-col justify-center rounded-xl bg-[linear-gradient(180deg,rgba(229,243,233,0.52),rgba(246,246,241,0.5))] p-5 text-center"><p className="font-serif text-4xl font-semibold text-[#17332c]">{formatCurrency(summary?.todaySalesAmount)}</p><p className="mt-2 text-sm text-slate-500">{summary?.todaySalesCount ?? 0} atendimento(s) concluído(s) no dia.</p><Button onClick={() => setLocation("/relatorios")} variant="outline" className="mx-auto mt-5 h-10 rounded-xl border-[#c9d8ca] bg-white text-[#254036] hover:bg-[#f5f7f4]">Analisar relatórios</Button></div></article>
+      <article className="rounded-2xl border border-white/80 bg-white p-5 shadow-[0_10px_28px_rgba(37,59,48,0.06)] sm:p-6"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[0.13em] text-slate-500">Operação</p><h2 className="mt-1 font-serif text-xl font-semibold text-[#17332c]">Atalhos do dia</h2></div><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800"><Clock3 className="h-[18px] w-[18px]" /></span></div><div className="mt-6 space-y-2"><button onClick={() => setLocation("/caixa")} className="group flex w-full items-center justify-between rounded-xl bg-[#f5f7f4] px-4 py-3 text-left transition-colors hover:bg-[#eaf2eb]"><span className="flex items-center gap-3 text-sm font-semibold text-[#294239]"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-emerald-800 shadow-sm"><Banknote className="h-4 w-4" /></span>Abrir ou conferir caixa</span><ArrowUpRight className="h-4 w-4 text-slate-400 group-hover:text-emerald-700" /></button><button onClick={() => setLocation("/produtos")} className="group flex w-full items-center justify-between rounded-xl bg-[#f5f7f4] px-4 py-3 text-left transition-colors hover:bg-[#eaf2eb]"><span className="flex items-center gap-3 text-sm font-semibold text-[#294239]"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-emerald-800 shadow-sm"><PackageSearch className="h-4 w-4" /></span>Cadastrar produto</span><ArrowUpRight className="h-4 w-4 text-slate-400 group-hover:text-emerald-700" /></button><button onClick={() => setLocation("/estoque")} className="group flex w-full items-center justify-between rounded-xl bg-[#f5f7f4] px-4 py-3 text-left transition-colors hover:bg-[#eaf2eb]"><span className="flex items-center gap-3 text-sm font-semibold text-[#294239]"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-emerald-800 shadow-sm"><Boxes className="h-4 w-4" /></span>Movimentar estoque</span><ArrowUpRight className="h-4 w-4 text-slate-400 group-hover:text-emerald-700" /></button></div><Button onClick={() => setLocation("/relatorios")} variant="outline" className="mt-5 h-10 w-full rounded-xl border-[#d4dfd5] bg-white text-[#254036] hover:bg-[#f5f7f4]">Ver relatórios operacionais</Button></article></section>
+    <section className="mt-6 rounded-2xl border border-white/80 bg-white p-5 shadow-[0_10px_28px_rgba(37,59,48,0.06)] sm:p-6"><div className="flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.13em] text-slate-500">Acompanhamento</p><h2 className="mt-1 font-serif text-xl font-semibold text-[#17332c]">Atividade recente</h2></div><span className="rounded-lg bg-[#eef5ee] px-3 py-1.5 text-xs font-semibold text-emerald-800">Últimos eventos</span></div>{activity?.length ? <div className="mt-5 divide-y divide-[#edf0ed]">{activity.map(item => <div key={item.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 py-3"><span className={`flex h-9 w-9 items-center justify-center rounded-xl ${item.kind === "sale" ? "bg-emerald-100 text-emerald-800" : item.kind === "stock" ? "bg-sky-100 text-sky-800" : "bg-amber-100 text-amber-800"}`}>{item.kind === "sale" ? <ShoppingCart className="h-4 w-4" /> : item.kind === "stock" ? <Boxes className="h-4 w-4" /> : <WalletCards className="h-4 w-4" />}</span><div className="min-w-0"><p className="truncate text-sm font-semibold text-[#294239]">{item.title}</p><p className="mt-0.5 truncate text-xs text-slate-500">{new Date(item.createdAt).toLocaleString("pt-BR")}</p></div><span className="text-sm font-semibold text-[#294239]">{item.kind === "stock" ? item.detail : formatCurrency(item.detail)}</span></div>)}</div> : <div className="mt-5 rounded-xl bg-[#f7faf7] px-5 py-7 text-center"><p className="text-sm font-semibold text-[#294239]">Nenhuma atividade registrada ainda.</p><p className="mt-1 text-sm text-slate-500">As vendas, entradas de estoque e movimentos de caixa aparecerão aqui.</p></div>}</section>
+    <section className="mt-6 rounded-2xl border border-dashed border-[#c7d6ca] bg-[#eef5ee] px-5 py-5 sm:flex sm:items-center sm:justify-between sm:px-6"><div><p className="text-sm font-semibold text-[#244334]">Sua operação começa com um produto.</p><p className="mt-1 text-sm text-slate-600">Cadastre os itens da loja e defina os níveis mínimos para receber alertas de estoque.</p></div><Button onClick={() => setLocation("/produtos")} variant="ghost" className="mt-4 h-10 rounded-xl px-0 font-semibold text-emerald-800 hover:bg-transparent hover:text-emerald-950 sm:mt-0">Ir para produtos <ArrowUpRight className="ml-1.5 h-4 w-4" /></Button></section>
+  </div>;
 }
