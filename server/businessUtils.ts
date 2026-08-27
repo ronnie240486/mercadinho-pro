@@ -8,6 +8,10 @@ export function hasOperationalPermission(role: OperationalRole, allowedRoles: re
   return allowedRoles.includes(role);
 }
 
+export function normalizeBarcodeCode(value: string) {
+  return value.trim().replace(/\s+/g, "");
+}
+
 export function calculateSaleTotals(
   items: Array<{ quantity: number; unitPrice: number }>,
   discountAmount = 0,

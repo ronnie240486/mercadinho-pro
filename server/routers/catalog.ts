@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createCategory, createCustomer, createProduct, createSupplier, listCategories, listCustomers, listProducts, listSuppliers, updateProduct } from "../db";
+import { createCategory, createCustomer, createProduct, createSupplier, findProductByCode, listCategories, listCustomers, listProducts, listSuppliers, updateProduct } from "../db";
 import { router } from "../_core/trpc";
 import { managementProcedure, salesProcedure, stockProcedure } from "./_permissions";
 
@@ -18,6 +18,7 @@ const productInput = z.object({
 export const catalogRouter = router({
   products: router({
     list: salesProcedure.input(z.object({ search: z.string().trim().max(100).optional() }).optional()).query(({ input }) => listProducts(input?.search)),
+    scan: salesProcedure.input(z.object({ code: z.string().trim().min(3).max(64) })).mutation(({ input }) => findProductByCode(input.code)),
     create: stockProcedure.input(productInput).mutation(({ input }) => createProduct(input)),
     update: stockProcedure.input(productInput.extend({ id: z.number().int().positive(), active: z.boolean() })).mutation(({ input }) => updateProduct(input)),
   }),

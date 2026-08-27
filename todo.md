@@ -20,3 +20,11 @@
 - [x] Padronizar estados de erro e ações de recuperação nos módulos principais.
 - [x] Validar visualmente a interface em resoluções de computador, tablet e celular.
 - [x] Documentar os recursos desta primeira versão e os próximos incrementos recomendados.
+- [x] Integrar a captura de código de barras por leitor USB/Bluetooth no PDV e no cadastro de produtos.
+- [x] Criar atalho de leitura por câmera para dispositivos móveis compatíveis.
+- [x] Implementar no cadastro de produtos um fluxo verificável para leitura por leitor USB/Bluetooth, com campo focável, confirmação e feedback automático.
+- [x] Pesquisar e recomendar uma estratégia de integração fiscal compatível com o tipo de operação do mercadinho.
+- [ ] Preparar configurações empresariais e o fluxo de emissão de nota fiscal sem realizar emissões reais antes da validação fiscal.
+- [ ] Acrescentar melhorias operacionais priorizadas para compras, precificação, inventário, perdas, validade e relatórios.
+- [x] Validar os novos recursos e atualizar a documentação do sistema.
+- [x] Manter a emissão fiscal como expansão futura, sem configuração de credenciais ou emissão de documentos nesta etapa.

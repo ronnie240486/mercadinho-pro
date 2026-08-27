@@ -16,7 +16,7 @@ import {
   type InsertUser,
   users,
 } from "../drizzle/schema";
-import { applyStockMovement, calculateCashBalance, calculateSaleTotals, type PaymentMethod } from "./businessUtils";
+import { applyStockMovement, calculateCashBalance, calculateSaleTotals, normalizeBarcodeCode, type PaymentMethod } from "./businessUtils";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -137,6 +137,31 @@ export async function listProducts(search?: string) {
     .where(and(eq(products.active, true), searchCondition))
     .orderBy(products.name)
     .limit(100);
+}
+
+export async function findProductByCode(code: string) {
+  const db = await requireDb();
+  const normalizedCode = normalizeBarcodeCode(code);
+  const result = await db
+    .select({
+      id: products.id,
+      barcode: products.barcode,
+      internalCode: products.internalCode,
+      name: products.name,
+      categoryId: products.categoryId,
+      categoryName: categories.name,
+      unit: products.unit,
+      costPrice: products.costPrice,
+      salePrice: products.salePrice,
+      stockQuantity: products.stockQuantity,
+      minimumStock: products.minimumStock,
+      active: products.active,
+    })
+    .from(products)
+    .leftJoin(categories, eq(products.categoryId, categories.id))
+    .where(and(eq(products.active, true), or(eq(products.barcode, normalizedCode), eq(products.internalCode, normalizedCode))))
+    .limit(1);
+  return result[0] ?? null;
 }
 
 export async function createProduct(input: {

@@ -8,7 +8,7 @@ O **Mercadinho Pro** é um sistema web responsivo para organizar a rotina comerc
 |---|---|
 | Visão geral | Indicadores do dia, status de caixa, alertas de estoque e linha do tempo de atividades. |
 | Produtos | Cadastro, consulta, busca, edição e exportação de produtos com códigos, categoria, preços e estoque mínimo. |
-| PDV | Busca por nome, código interno ou barras, carrinho, desconto, cliente e pagamentos por dinheiro, cartão ou PIX. |
+| PDV | Busca por nome, código interno ou barras, carrinho, desconto, cliente e pagamentos por dinheiro, cartão ou PIX; leitura por leitor USB/Bluetooth e por câmera em navegadores compatíveis. |
 | Estoque | Entradas, saídas operacionais, ajustes, devoluções, histórico e alertas de saldo mínimo. |
 | Compras | Registro de compra por fornecedor, atualização automática de custo e entrada de mercadoria no estoque. |
 | Caixa | Abertura, suprimento, sangria, acompanhamento de saldo físico e fechamento com conferência de diferença. |
@@ -35,3 +35,16 @@ O **Mercadinho Pro** é um sistema web responsivo para organizar a rotina comerc
 | Média | Contagem guiada de inventário e importação inicial de catálogo por planilha. |
 | Média | Impressão de comprovante e integração com equipamentos fiscais conforme a região. |
 | Evolução | Painéis por período, metas comerciais, contas a pagar e integração contábil. |
+
+## Evolução operacional priorizada
+
+| Prioridade | Recurso | Benefício prático na rotina |
+|---|---|---|
+| 1 | Inventário guiado por código de barras | Acelera a contagem física e aponta divergências entre a prateleira e o sistema. |
+| 2 | Lotes, validade e alertas de vencimento | Ajuda a priorizar exposição, promoção ou descarte antes de perder mercadoria. |
+| 3 | Registro de perdas e avarias por motivo | Mostra onde há quebra, vencimento, furto ou erro de recebimento. |
+| 4 | Compras com vários itens e comparação de custo | Facilita a reposição por fornecedor e destaca aumentos de preço. |
+| 5 | Etiquetas de preço e promoções programadas | Reduz divergências de gôndola e agiliza alterações de preço. |
+| 6 | Contas a pagar e despesas operacionais | Conecta a margem de venda à visão real do caixa da loja. |
+
+> **Emissão fiscal:** a integração com NFC-e foi deliberadamente adiada. O sistema está preparado para continuar a operação interna, e a emissão só deve ser configurada em uma etapa futura, após validação fiscal e contratação do provedor escolhido.

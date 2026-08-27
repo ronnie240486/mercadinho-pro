@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyStockMovement, calculateCashBalance, calculateSaleTotals, hasOperationalPermission } from "./businessUtils";
+import { applyStockMovement, calculateCashBalance, calculateSaleTotals, hasOperationalPermission, normalizeBarcodeCode } from "./businessUtils";
 
 describe("regras comerciais", () => {
   it("calcula subtotal, desconto e total de uma venda", () => {
@@ -22,5 +22,9 @@ describe("regras comerciais", () => {
   it("reconhece os papéis autorizados para a operação", () => {
     expect(hasOperationalPermission("stockist", ["admin", "stockist"])).toBe(true);
     expect(hasOperationalPermission("operator", ["admin", "stockist"])).toBe(false);
+  });
+
+  it("normaliza espaços inseridos na leitura do código de barras", () => {
+    expect(normalizeBarcodeCode("  789 1234 5678 90  ")).toBe("7891234567890");
   });
 });
