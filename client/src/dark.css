@@ -1,0 +1,8 @@
+.dark body { background: #10221d; color: #edf7f0; }
+.dark [class*="bg-[#f6f6f1]"], .dark [class*="bg-white"] { background-color: #172b24 !important; }
+.dark [class*="text-[#17332c]"], .dark [class*="text-[#294239]"] { color: #eef8f1 !important; }
+.dark [class*="text-slate-"] { color: #b7c9bf !important; }
+.dark .text-emerald-800 { color: #94e5b1 !important; }
+.dark [class*="border-[#"], .dark [class*="border-white"] { border-color: #345246 !important; }
+.dark .bg-\[\#123e32\] { background-color: #0b261e !important; }
+.dark .bg-\[\#d8f0df\] { background-color: #285544 !important; }

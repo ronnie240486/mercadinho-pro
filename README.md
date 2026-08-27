@@ -18,6 +18,10 @@ O **Mercadinho Pro** é um sistema web responsivo para organizar a rotina comerc
 | Cadastros | Fornecedores, clientes, categorias e administração de usuários. |
 | Relatórios | Vendas, ticket médio, produtos mais vendidos, estoque em atenção, movimentações de caixa e exportação em CSV. |
 
+## Identidade e visualização
+
+O sistema usa uma marca vetorial própria, presente na entrada, na navegação e no favicon. O controle de perfil permite alternar entre os modos claro e escuro; a escolha fica salva neste navegador para a próxima utilização. O modo escuro preserva a paleta verde do Mercadinho Pro com superfícies, bordas e textos adaptados para leitura operacional.
+
 ## Papéis de operação
 
 | Papel | Escopo de acesso |

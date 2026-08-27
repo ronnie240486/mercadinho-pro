@@ -53,3 +53,7 @@
 - [ ] Permitir definir por cliente a fidelidade em pontos acumulados ou crédito/desconto disponível.
 - [ ] Registrar movimentações de pontos e créditos com extrato separado e uso controlado no PDV.
 - [ ] Criar testes automatizados, validação responsiva e documentação para os novos módulos.
+- [x] Criar um ícone próprio e reconhecível para a marca Mercadinho Pro.
+- [x] Aplicar o ícone à identificação visual do sistema e à configuração do aplicativo.
+- [x] Implementar modo escuro com alternância persistente e contraste acessível nas telas principais.
+- [x] Validar o ícone e os temas claro e escuro em computador e celular.

@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/sidebar";
 import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
+import { useTheme } from "@/contexts/ThemeContext";
+import { BrandIcon } from "./BrandIcon";
 import {
   Boxes,
   Truck,
@@ -31,10 +33,12 @@ import {
   CalendarClock,
   LayoutDashboard,
   LogOut,
+  Moon,
   PackageSearch,
   PackagePlus,
   PanelLeft,
   ShoppingCart,
+  Sun,
   UsersRound,
   WalletCards,
 } from "lucide-react";
@@ -71,6 +75,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return saved ? Number.parseInt(saved, 10) : DEFAULT_WIDTH;
   });
   const { loading, user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
@@ -81,12 +86,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!user) {
     return (
       <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f6f6f1] px-5">
+        <button onClick={toggleTheme} className="absolute right-5 top-5 z-10 flex h-10 w-10 items-center justify-center rounded-xl border border-[#dfe5df] bg-white text-[#164e3d] shadow-sm transition-colors hover:bg-[#edf5ee]" aria-label={theme === "dark" ? "Usar modo claro" : "Usar modo escuro"}>{theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}</button>
         <div className="absolute -left-28 top-[-90px] h-72 w-72 rounded-full bg-emerald-200/45 blur-3xl" />
         <div className="absolute -bottom-28 right-[-80px] h-80 w-80 rounded-full bg-amber-100 blur-3xl" />
         <section className="relative w-full max-w-md rounded-[28px] border border-white/80 bg-white/85 p-8 text-center shadow-[0_24px_80px_rgba(23,52,45,0.13)] backdrop-blur sm:p-10">
-          <div className="mx-auto mb-7 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#164e3d] font-serif text-2xl font-semibold text-white shadow-lg shadow-emerald-900/15">
-            M
-          </div>
+          <div className="mx-auto mb-7 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#164e3d] text-[#d8f0df] shadow-lg shadow-emerald-900/15"><BrandIcon className="h-10 w-10" /></div>
           <p className="mb-2 text-xs font-bold uppercase tracking-[0.19em] text-emerald-800">Mercadinho Pro</p>
           <h1 className="font-serif text-3xl font-semibold tracking-tight text-[#17332c]">Sua operação em um só lugar.</h1>
           <p className="mt-4 text-sm leading-6 text-slate-600">
@@ -116,6 +120,7 @@ function DashboardLayoutContent({
   setSidebarWidth: (width: number) => void;
 }) {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [location, setLocation] = useLocation();
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -168,7 +173,7 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed && (
                 <button className="flex min-w-0 items-center gap-2.5 text-left" onClick={() => setLocation("/")}>
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#d8f0df] font-serif text-lg font-semibold text-[#164e3d]">M</span>
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#d8f0df] text-[#164e3d]"><BrandIcon className="h-7 w-7" /></span>
                   <span className="min-w-0">
                     <span className="block truncate font-serif text-base font-semibold tracking-tight">Mercadinho Pro</span>
                     <span className="block truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-200/75">Gestão comercial</span>
@@ -214,6 +219,7 @@ function DashboardLayoutContent({
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52 rounded-xl p-1.5">
+                <DropdownMenuItem onClick={toggleTheme} className="cursor-pointer rounded-lg"><span className="mr-2">{theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}</span>{theme === "dark" ? "Usar modo claro" : "Usar modo escuro"}</DropdownMenuItem>
                 <DropdownMenuItem onClick={logout} className="cursor-pointer rounded-lg text-destructive focus:text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
                   Encerrar sessão

@@ -20,6 +20,7 @@ import Registrations from "./pages/Registrations";
 import Reports from "./pages/Reports";
 import Stock from "./pages/Stock";
 import ShelfLife from "./pages/ShelfLife";
+import "./dark.css";
 
 function Router() {
   return (
@@ -50,7 +51,7 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="light">
+      <ThemeProvider defaultTheme="light" switchable>
         <TooltipProvider>
           <Toaster />
           <Router />
