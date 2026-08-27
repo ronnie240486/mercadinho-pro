@@ -63,3 +63,7 @@
 - [x] Validar a nova identidade visual em computador e celular e publicar um checkpoint.
 - [x] Gerar ativos otimizados da marca para uso no aplicativo, incluindo favicon e versão de navegação.
 - [x] Salvar um checkpoint publicado após aplicar o logo oficial e a paleta grafite, dourado e prata.
+- [x] Adicionar seleção de unidades comerciais padronizadas ao cadastro de produtos.
+- [x] Permitir informar uma sigla de unidade personalizada quando a opção padrão não atender ao produto.
+- [ ] Validar o cadastro de produtos com as novas unidades em computador e celular.
+- [ ] Registrar evidência visual autenticada do seletor de unidades e do campo de sigla personalizada em desktop e celular.

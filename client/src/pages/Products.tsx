@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { formatCurrency, formatQuantity, toNumber } from "@/lib/format";
+import { CUSTOM_UNIT_VALUE, isKnownProductUnit, normalizeProductUnit, productUnitGroups } from "@/lib/productUnits";
 import { trpc } from "@/lib/trpc";
 import { BadgePlus, Download, Loader2, PackagePlus, Search, SlidersHorizontal } from "lucide-react";
 import { FormEvent, useState } from "react";
@@ -16,6 +17,7 @@ type ProductForm = {
   internalCode: string;
   categoryId: string;
   unit: string;
+  customUnit: string;
   costPrice: string;
   salePrice: string;
   minimumStock: string;
@@ -33,7 +35,7 @@ type EditableProduct = {
   minimumStock: string;
 };
 
-const initialForm: ProductForm = { name: "", barcode: "", internalCode: "", categoryId: "", unit: "UN", costPrice: "", salePrice: "", minimumStock: "" };
+const initialForm: ProductForm = { name: "", barcode: "", internalCode: "", categoryId: "", unit: "UN", customUnit: "", costPrice: "", salePrice: "", minimumStock: "" };
 
 export default function Products() {
   const [search, setSearch] = useState("");
@@ -53,20 +55,30 @@ export default function Products() {
     setOpen(false);
     toast.success(message);
   };
-  const createProduct = trpc.catalog.products.create.useMutation({ onSuccess: () => completeSave("Produto cadastrado com sucesso."), onError: error => toast.error(error.message) });
-  const updateProduct = trpc.catalog.products.update.useMutation({ onSuccess: () => completeSave("Produto atualizado com sucesso."), onError: error => toast.error(error.message) });
+  const createProduct = trpc.catalog.products.create.useMutation({ onSuccess: () => completeSave("Produto cadastrado com sucesso."), onError: mutationError => toast.error(mutationError.message) });
+  const updateProduct = trpc.catalog.products.update.useMutation({ onSuccess: () => completeSave("Produto atualizado com sucesso."), onError: mutationError => toast.error(mutationError.message) });
 
   const updateForm = (field: keyof ProductForm, value: string) => setForm(current => ({ ...current, [field]: value }));
-  const captureBarcode = (barcode: string) => { updateForm("barcode", barcode); setBarcodeFeedback(`Código ${barcode} capturado. Confira e continue o cadastro.`); };
-  const startCreate = () => { setEditingId(null); setForm(initialForm); setBarcodeFeedback(""); setOpen(true); };
+  const captureBarcode = (barcode: string) => {
+    updateForm("barcode", barcode);
+    setBarcodeFeedback(`Código ${barcode} capturado. Confira e continue o cadastro.`);
+  };
+  const startCreate = () => {
+    setEditingId(null);
+    setForm(initialForm);
+    setBarcodeFeedback("");
+    setOpen(true);
+  };
   const startEdit = (product: EditableProduct) => {
+    const normalizedUnit = product.unit.trim().toUpperCase();
     setEditingId(product.id);
     setForm({
       name: product.name,
       barcode: product.barcode ?? "",
       internalCode: product.internalCode ?? "",
       categoryId: product.categoryId?.toString() ?? "",
-      unit: product.unit,
+      unit: isKnownProductUnit(normalizedUnit) ? normalizedUnit : CUSTOM_UNIT_VALUE,
+      customUnit: isKnownProductUnit(normalizedUnit) ? "" : normalizedUnit,
       costPrice: product.costPrice,
       salePrice: product.salePrice,
       minimumStock: product.minimumStock,
@@ -87,9 +99,14 @@ export default function Products() {
   };
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    const payload = { name: form.name, barcode: form.barcode || undefined, internalCode: form.internalCode || undefined, categoryId: form.categoryId ? Number(form.categoryId) : null, unit: form.unit, costPrice: Number(form.costPrice), salePrice: Number(form.salePrice), minimumStock: Number(form.minimumStock) };
-    if (editingId) updateProduct.mutate({ ...payload, id: editingId, active: true });
-    else createProduct.mutate(payload);
+    try {
+      const unit = normalizeProductUnit(form.unit, form.customUnit);
+      const payload = { name: form.name, barcode: form.barcode || undefined, internalCode: form.internalCode || undefined, categoryId: form.categoryId ? Number(form.categoryId) : null, unit, costPrice: Number(form.costPrice), salePrice: Number(form.salePrice), minimumStock: Number(form.minimumStock) };
+      if (editingId) updateProduct.mutate({ ...payload, id: editingId, active: true });
+      else createProduct.mutate(payload);
+    } catch (validationError) {
+      toast.error(validationError instanceof Error ? validationError.message : "Revise a unidade comercial informada.");
+    }
   };
 
   return <div className="mx-auto max-w-[1480px]">
@@ -105,6 +122,6 @@ export default function Products() {
         return <div key={product.id} className="grid gap-2 border-b border-[#edf0ed] px-5 py-4 last:border-0 lg:grid-cols-[minmax(200px,2fr)_1fr_110px_120px_120px_110px] lg:items-center lg:gap-4"><div><p className="text-sm font-semibold text-[#294239]">{product.name}</p><p className="mt-1 text-xs text-slate-500">{product.barcode || product.internalCode || "Sem código"}</p></div><span className="text-sm text-slate-600">{product.categoryName || "Sem categoria"}</span><span className={`text-sm font-semibold ${isLow ? "text-amber-700" : "text-[#294239]"}`}>{formatQuantity(product.stockQuantity)} {product.unit}</span><span className="text-sm text-slate-600">{formatCurrency(product.costPrice)}</span><span className="text-sm font-semibold text-[#294239]">{formatCurrency(product.salePrice)}</span><button onClick={() => startEdit(product)} className={`w-fit rounded-lg px-2 py-1 text-xs font-semibold ${isLow ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>{isLow ? "Estoque baixo" : "Editar"}</button></div>;
       })}</div> : <div className="flex min-h-[390px] flex-col items-center justify-center px-5 py-12 text-center"><span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e6f3e9] text-emerald-800"><BadgePlus className="h-6 w-6" /></span><h2 className="mt-5 font-serif text-xl font-semibold text-[#17332c]">{search ? "Nenhum produto encontrado." : "Seu catálogo ainda está vazio."}</h2><p className="mt-2 max-w-md text-sm leading-6 text-slate-500">{search ? "Tente buscar por outro nome, código interno ou código de barras." : "Comece pelo produto mais vendido. Depois, informe custos, preço de venda, código e estoque mínimo para operar com segurança."}</p><Button onClick={startCreate} className="mt-6 h-11 rounded-xl bg-[#164e3d] px-5 text-white hover:bg-[#0f4032]"><PackagePlus className="mr-2 h-4 w-4" />Cadastrar primeiro produto</Button></div>}
     </section>
-    <Dialog open={open} onOpenChange={isOpen => !isOpen && setOpen(false)}><DialogContent className="max-h-[90vh] overflow-y-auto rounded-2xl sm:max-w-2xl"><DialogHeader><DialogTitle className="font-serif text-2xl text-[#17332c]">{editingId ? "Editar produto" : "Cadastrar produto"}</DialogTitle><DialogDescription>Preencha os dados básicos para disponibilizar o item no estoque e no PDV.</DialogDescription></DialogHeader><form onSubmit={submit} className="grid gap-4 pt-2 sm:grid-cols-2"><label className="sm:col-span-2"><span className="mb-1.5 block text-sm font-semibold text-[#294239]">Nome do produto</span><Input required value={form.name} onChange={event => updateForm("name", event.target.value)} placeholder="Ex.: Arroz tipo 1, 5 kg" className="h-11 rounded-xl" /></label><label><span className="mb-1.5 block text-sm font-semibold text-[#294239]">Código de barras</span><div className="flex gap-2"><Input autoFocus value={form.barcode} onKeyDown={event => { if (event.key === "Enter" && event.currentTarget.value.trim()) { event.preventDefault(); captureBarcode(event.currentTarget.value.trim()); } }} onChange={event => { updateForm("barcode", event.target.value); setBarcodeFeedback(""); }} placeholder="Use o leitor ou digite" className="h-11 rounded-xl" /><BarcodeScannerButton onDetected={captureBarcode} label="Câmera" /></div><p aria-live="polite" className="mt-1.5 min-h-5 text-xs text-emerald-800">{barcodeFeedback || "Campo pronto para leitor USB/Bluetooth. Após a leitura, o Enter confirma o código."}</p></label><label><span className="mb-1.5 block text-sm font-semibold text-[#294239]">Código interno</span><Input value={form.internalCode} onChange={event => updateForm("internalCode", event.target.value)} placeholder="Opcional" className="h-11 rounded-xl" /></label><label><span className="mb-1.5 block text-sm font-semibold text-[#294239]">Categoria</span><select value={form.categoryId} onChange={event => updateForm("categoryId", event.target.value)} className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm"><option value="">Sem categoria</option>{categories?.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label><label><span className="mb-1.5 block text-sm font-semibold text-[#294239]">Unidade</span><Input required value={form.unit} onChange={event => updateForm("unit", event.target.value)} placeholder="UN" className="h-11 rounded-xl" /></label><label><span className="mb-1.5 block text-sm font-semibold text-[#294239]">Preço de custo</span><Input required type="number" min="0" step="0.01" value={form.costPrice} onChange={event => updateForm("costPrice", event.target.value)} placeholder="0,00" className="h-11 rounded-xl" /></label><label><span className="mb-1.5 block text-sm font-semibold text-[#294239]">Preço de venda</span><Input required type="number" min="0" step="0.01" value={form.salePrice} onChange={event => updateForm("salePrice", event.target.value)} placeholder="0,00" className="h-11 rounded-xl" /></label><label><span className="mb-1.5 block text-sm font-semibold text-[#294239]">Estoque mínimo</span><Input required type="number" min="0" step="0.001" value={form.minimumStock} onChange={event => updateForm("minimumStock", event.target.value)} placeholder="0" className="h-11 rounded-xl" /></label><div className="flex items-end justify-end gap-2 sm:col-span-2"><Button type="button" variant="outline" onClick={() => setOpen(false)} className="h-11 rounded-xl">Cancelar</Button><Button disabled={createProduct.isPending || updateProduct.isPending} className="h-11 rounded-xl bg-[#164e3d] text-white hover:bg-[#0f4032]">{(createProduct.isPending || updateProduct.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{editingId ? "Salvar alterações" : "Salvar produto"}</Button></div></form></DialogContent></Dialog>
+    <Dialog open={open} onOpenChange={isOpen => !isOpen && setOpen(false)}><DialogContent className="max-h-[90vh] overflow-y-auto rounded-2xl sm:max-w-2xl"><DialogHeader><DialogTitle className="font-serif text-2xl text-[#17332c]">{editingId ? "Editar produto" : "Cadastrar produto"}</DialogTitle><DialogDescription>Preencha os dados básicos para disponibilizar o item no estoque e no PDV.</DialogDescription></DialogHeader><form onSubmit={submit} className="grid gap-4 pt-2 sm:grid-cols-2"><label className="sm:col-span-2"><span className="mb-1.5 block text-sm font-semibold text-[#294239]">Nome do produto</span><Input required value={form.name} onChange={event => updateForm("name", event.target.value)} placeholder="Ex.: Arroz tipo 1, 5 kg" className="h-11 rounded-xl" /></label><label><span className="mb-1.5 block text-sm font-semibold text-[#294239]">Código de barras</span><div className="flex gap-2"><Input autoFocus value={form.barcode} onKeyDown={event => { if (event.key === "Enter" && event.currentTarget.value.trim()) { event.preventDefault(); captureBarcode(event.currentTarget.value.trim()); } }} onChange={event => { updateForm("barcode", event.target.value); setBarcodeFeedback(""); }} placeholder="Use o leitor ou digite" className="h-11 rounded-xl" /><BarcodeScannerButton onDetected={captureBarcode} label="Câmera" /></div><p aria-live="polite" className="mt-1.5 min-h-5 text-xs text-emerald-800">{barcodeFeedback || "Campo pronto para leitor USB/Bluetooth. Após a leitura, o Enter confirma o código."}</p></label><label><span className="mb-1.5 block text-sm font-semibold text-[#294239]">Código interno</span><Input value={form.internalCode} onChange={event => updateForm("internalCode", event.target.value)} placeholder="Opcional" className="h-11 rounded-xl" /></label><label><span className="mb-1.5 block text-sm font-semibold text-[#294239]">Categoria</span><select value={form.categoryId} onChange={event => updateForm("categoryId", event.target.value)} className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm"><option value="">Sem categoria</option>{categories?.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label><label><span className="mb-1.5 block text-sm font-semibold text-[#294239]">Unidade comercial</span><select value={form.unit} onChange={event => updateForm("unit", event.target.value)} className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm">{productUnitGroups.map(group => <optgroup key={group.label} label={group.label}>{group.options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</optgroup>)}<option value={CUSTOM_UNIT_VALUE}>Outra sigla…</option></select><span className="mt-1.5 block text-xs text-slate-500">A sigla será exibida no estoque, compras e PDV.</span></label>{form.unit === CUSTOM_UNIT_VALUE ? <label className="sm:col-span-2"><span className="mb-1.5 block text-sm font-semibold text-[#294239]">Sigla personalizada</span><Input required value={form.customUnit} onChange={event => updateForm("customUnit", event.target.value)} placeholder="Ex.: CX-12" maxLength={10} className="h-11 rounded-xl uppercase" /><span className="mt-1.5 block text-xs text-slate-500">Use até 10 caracteres: letras, números, ponto, barra ou hífen.</span></label> : null}<label><span className="mb-1.5 block text-sm font-semibold text-[#294239]">Preço de custo</span><Input required type="number" min="0" step="0.01" value={form.costPrice} onChange={event => updateForm("costPrice", event.target.value)} placeholder="0,00" className="h-11 rounded-xl" /></label><label><span className="mb-1.5 block text-sm font-semibold text-[#294239]">Preço de venda</span><Input required type="number" min="0" step="0.01" value={form.salePrice} onChange={event => updateForm("salePrice", event.target.value)} placeholder="0,00" className="h-11 rounded-xl" /></label><label><span className="mb-1.5 block text-sm font-semibold text-[#294239]">Estoque mínimo</span><Input required type="number" min="0" step="0.001" value={form.minimumStock} onChange={event => updateForm("minimumStock", event.target.value)} placeholder="0" className="h-11 rounded-xl" /></label><div className="flex items-end justify-end gap-2 sm:col-span-2"><Button type="button" variant="outline" onClick={() => setOpen(false)} className="h-11 rounded-xl">Cancelar</Button><Button disabled={createProduct.isPending || updateProduct.isPending} className="h-11 rounded-xl bg-[#164e3d] text-white hover:bg-[#0f4032]">{(createProduct.isPending || updateProduct.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{editingId ? "Salvar alterações" : "Salvar produto"}</Button></div></form></DialogContent></Dialog>
   </div>;
 }
