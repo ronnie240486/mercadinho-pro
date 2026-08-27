@@ -43,7 +43,7 @@
 - [x] Manter a emissão fiscal como expansão futura, sem configuração de credenciais ou emissão de documentos nesta etapa.
 - [x] Criar cancelamento de venda com estorno auditável de caixa, estoque e lotes consumidos.
 - [x] Criar devolução parcial ou total de itens vendidos com rastreabilidade de estoque e caixa.
-- [ ] Implementar contas a pagar com fornecedores, vencimentos, baixas e status financeiro.
+- [x] Implementar contas a pagar com fornecedores, vencimentos, baixas e status financeiro.
 - [x] Criar central de alertas internos para estoque crítico, validade, caixa e contas próximas do vencimento.
 - [x] Implementar importação de catálogo de produtos por arquivo CSV com validação de dados.
 - [x] Criar impressão de etiquetas de preço com código de barras para os produtos selecionados.
@@ -70,3 +70,9 @@
 - [x] Tratar vendas históricas sem alocação de lote, bloqueando cancelamentos e devoluções que não possam recompor os lotes com segurança.
 - [ ] Adicionar testes para vendas sem alocação de lote e validar o fluxo autenticado de cancelamento e devolução.
 - [ ] Validar em sessão autenticada os fluxos de cancelamento e devolução na central de vendas, incluindo o bloqueio de vendas históricas sem alocação de lote, e registrar evidência.
+- [x] Adicionar estado vazio orientativo à central de contas a pagar quando não houver compromissos cadastrados.
+- [ ] Validar em sessão autenticada o modal de cadastro de produtos em desktop, abrindo o seletor de unidades e registrando evidência visual.
+- [ ] Validar em sessão autenticada o modal de cadastro de produtos em celular, abrindo o seletor de unidades e registrando evidência visual.
+- [ ] Registrar evidência visual autenticada do campo de sigla personalizada em desktop e celular, incluindo a troca para a opção personalizada e o campo preenchível.
+- [x] Confirmar em sessão autenticada no celular a opção Outra sigla e o campo de sigla personalizada preenchível.
+- [x] Elaborar um roteiro priorizado das próximas funcionalidades para ampliar a gestão do mercadinho, mantendo a emissão fiscal adiada.

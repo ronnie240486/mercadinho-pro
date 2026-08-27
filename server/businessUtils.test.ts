@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { allocateBatchConsumption, allocateBatchRestoration, applyStockMovement, calculateCashBalance, calculateLoyaltyRedemption, calculateSaleTotals, formatBatchConsumption, hasOperationalPermission, normalizeBarcodeCode, requireBatchCoverage } from "./businessUtils";
+import { allocateBatchConsumption, allocateBatchRestoration, applyStockMovement, calculateCashBalance, calculateLoyaltyRedemption, calculateSaleTotals, formatBatchConsumption, hasOperationalPermission, normalizeBarcodeCode, requireBatchCoverage, resolveAccountPayableStatus } from "./businessUtils";
 
 describe("regras comerciais", () => {
   it("calcula subtotal, desconto e total de uma venda", () => {
@@ -34,6 +34,12 @@ describe("regras comerciais", () => {
       { type: "return", amount: 15, paymentMethod: "cash" },
       { type: "return", amount: 10, paymentMethod: "debit" },
     ])).toBe(85);
+  });
+
+  it("classifica contas abertas vencidas sem alterar contas já baixadas", () => {
+    expect(resolveAccountPayableStatus("open", "2026-08-26", "2026-08-27")).toBe("overdue");
+    expect(resolveAccountPayableStatus("open", "2026-08-27", "2026-08-27")).toBe("open");
+    expect(resolveAccountPayableStatus("paid", "2026-08-01", "2026-08-27")).toBe("paid");
   });
 
   it("reconhece os papéis autorizados para a operação", () => {

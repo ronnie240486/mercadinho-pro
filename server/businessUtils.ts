@@ -118,3 +118,7 @@ export function calculateCashBalance(
   }, openingAmount);
   return Math.round(balance * 100) / 100;
 }
+
+export function resolveAccountPayableStatus(status: "open" | "paid" | "overdue" | "cancelled", dueDate: string, today: string) {
+  return status === "open" && dueDate < today ? "overdue" : status;
+}

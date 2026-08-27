@@ -26,7 +26,7 @@ import {
   type InsertUser,
   users,
 } from "../drizzle/schema";
-import { allocateBatchRestoration, applyStockMovement, calculateCashBalance, calculateLoyaltyRedemption, calculateSaleTotals, formatBatchConsumption, normalizeBarcodeCode, requireBatchCoverage, type PaymentMethod } from "./businessUtils";
+import { allocateBatchRestoration, applyStockMovement, calculateCashBalance, calculateLoyaltyRedemption, calculateSaleTotals, formatBatchConsumption, normalizeBarcodeCode, requireBatchCoverage, resolveAccountPayableStatus, type PaymentMethod } from "./businessUtils";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -1046,7 +1046,8 @@ export async function listAccountsPayable() {
   const db = await requireDb();
   const today = new Date().toISOString().slice(0, 10);
   await db.update(accountsPayable).set({ status: "overdue" }).where(and(eq(accountsPayable.status, "open"), sql`${accountsPayable.dueDate} < ${today}`));
-  return db.select({ id: accountsPayable.id, description: accountsPayable.description, dueDate: accountsPayable.dueDate, amount: accountsPayable.amount, paidAmount: accountsPayable.paidAmount, status: accountsPayable.status, supplierName: suppliers.legalName }).from(accountsPayable).leftJoin(suppliers, eq(accountsPayable.supplierId, suppliers.id)).orderBy(accountsPayable.dueDate).limit(100);
+  const accounts = await db.select({ id: accountsPayable.id, description: accountsPayable.description, dueDate: accountsPayable.dueDate, amount: accountsPayable.amount, paidAmount: accountsPayable.paidAmount, status: accountsPayable.status, supplierName: suppliers.legalName }).from(accountsPayable).leftJoin(suppliers, eq(accountsPayable.supplierId, suppliers.id)).orderBy(accountsPayable.dueDate).limit(100);
+  return accounts.map(account => ({ ...account, status: resolveAccountPayableStatus(account.status, account.dueDate, today) }));
 }
 
 export async function createAccountPayable(input: { supplierId?: number | null; description: string; dueDate: string; amount: number; notes?: string }) {
