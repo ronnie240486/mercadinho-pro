@@ -2,6 +2,8 @@ import { and, desc, eq, gte, inArray, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   accountsPayable,
+  loyaltyTransactions,
+  salesGoals,
   cashMovements,
   cashSessions,
   categories,
@@ -739,3 +741,7 @@ export async function payAccountPayable(id: number) {
   await db.update(accountsPayable).set({ status: "paid", paidAmount: account.amount, paidAt: new Date() }).where(eq(accountsPayable.id, id));
   return { success: true } as const;
 }
+
+export async function listSalesGoals() { const db = await requireDb(); return db.select().from(salesGoals).orderBy(desc(salesGoals.createdAt)); }
+export async function createSalesGoal(input: { name: string; startsOn: string; endsOn: string; targetAmount: number }) { const db = await requireDb(); await db.insert(salesGoals).values({ ...input, targetAmount: decimal(input.targetAmount) }); return { success: true } as const; }
+export async function listLoyaltyBalances() { const db = await requireDb(); return db.select({ customerId: customers.id, name: customers.name, points: sql<number>`coalesce(sum(${loyaltyTransactions.points}), 0)` }).from(customers).leftJoin(loyaltyTransactions, eq(loyaltyTransactions.customerId, customers.id)).groupBy(customers.id, customers.name).orderBy(desc(sql`coalesce(sum(${loyaltyTransactions.points}), 0)`)).limit(100); }
