@@ -50,4 +50,6 @@
 - [ ] Adicionar análise de faturamento, margem e volume de vendas por categoria.
 - [ ] Implementar metas de vendas por período com acompanhamento de desempenho.
 - [ ] Criar programa de fidelidade com pontos, extrato e uso em vendas de clientes identificados.
+- [ ] Permitir definir por cliente a fidelidade em pontos acumulados ou crédito/desconto disponível.
+- [ ] Registrar movimentações de pontos e créditos com extrato separado e uso controlado no PDV.
 - [ ] Criar testes automatizados, validação responsiva e documentação para os novos módulos.
