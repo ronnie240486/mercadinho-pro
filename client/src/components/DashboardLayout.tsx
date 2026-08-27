@@ -28,6 +28,7 @@ import {
   Truck,
   ClipboardCheck,
   ChartNoAxesCombined,
+  History,
   BadgePercent,
   BellRing,
   CalendarClock,
@@ -38,7 +39,9 @@ import {
   PackagePlus,
   PanelLeft,
   ShoppingCart,
+  Star,
   Sun,
+  Target,
   UsersRound,
   WalletCards,
 } from "lucide-react";
@@ -50,6 +53,7 @@ import { Button } from "./ui/button";
 const menuItems = [
   { icon: LayoutDashboard, label: "Visão geral", path: "/" },
   { icon: ShoppingCart, label: "Frente de caixa", path: "/pdv" },
+  { icon: History, label: "Histórico de vendas", path: "/vendas" },
   { icon: PackageSearch, label: "Produtos", path: "/produtos" },
   { icon: Boxes, label: "Estoque", path: "/estoque" },
   { icon: Truck, label: "Compras", path: "/compras" },
@@ -60,6 +64,8 @@ const menuItems = [
   { icon: WalletCards, label: "Contas a pagar", path: "/contas-a-pagar" },
   { icon: BellRing, label: "Alertas", path: "/alertas" },
   { icon: PackagePlus, label: "Ferramentas", path: "/ferramentas" },
+  { icon: Target, label: "Metas de vendas", path: "/metas" },
+  { icon: Star, label: "Fidelidade", path: "/fidelidade" },
   { icon: UsersRound, label: "Cadastros", path: "/cadastros" },
   { icon: ChartNoAxesCombined, label: "Relatórios", path: "/relatorios" },
 ];

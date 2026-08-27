@@ -20,6 +20,8 @@ import Registrations from "./pages/Registrations";
 import Reports from "./pages/Reports";
 import Stock from "./pages/Stock";
 import ShelfLife from "./pages/ShelfLife";
+import SalesHistory from "./pages/SalesHistory";
+import SalesGoals from "./pages/SalesGoals";
 import "./brand.css";
 import "./dark.css";
 
@@ -29,6 +31,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/pdv" component={Pdv} />
+        <Route path="/vendas" component={SalesHistory} />
         <Route path="/precos" component={Pricing} />
         <Route path="/produtos" component={Products} />
         <Route path="/compras" component={Purchases} />
@@ -40,6 +43,7 @@ function Router() {
         <Route path="/alertas" component={Alerts} />
         <Route path="/ferramentas" component={Utilities} />
         <Route path="/fidelidade" component={Loyalty} />
+        <Route path="/metas" component={SalesGoals} />
         <Route path="/cadastros" component={Registrations} />
         <Route path="/relatorios" component={Reports} />
         <Route path="/404" component={NotFound} />

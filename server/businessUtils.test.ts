@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { allocateBatchConsumption, applyStockMovement, calculateCashBalance, calculateSaleTotals, formatBatchConsumption, hasOperationalPermission, normalizeBarcodeCode, requireBatchCoverage } from "./businessUtils";
+import { allocateBatchConsumption, allocateBatchRestoration, applyStockMovement, calculateCashBalance, calculateLoyaltyRedemption, calculateSaleTotals, formatBatchConsumption, hasOperationalPermission, normalizeBarcodeCode, requireBatchCoverage } from "./businessUtils";
 
 describe("regras comerciais", () => {
   it("calcula subtotal, desconto e total de uma venda", () => {
@@ -10,6 +10,12 @@ describe("regras comerciais", () => {
     expect(() => calculateSaleTotals([{ quantity: 1, unitPrice: 4 }], 4.01)).toThrow("desconto");
   });
 
+  it("converte pontos e limita crédito de fidelidade ao valor da venda", () => {
+    expect(calculateLoyaltyRedemption("points", 200, 150, 1.2)).toEqual({ points: 120, creditAmount: 0, discountAmount: 1.2 });
+    expect(calculateLoyaltyRedemption("credit", 8, 6, 4.5)).toEqual({ points: 0, creditAmount: 4.5, discountAmount: 4.5 });
+    expect(() => calculateLoyaltyRedemption("points", 10, 11, 5)).toThrow("pontos suficientes");
+  });
+
   it("não permite estoque negativo", () => {
     expect(applyStockMovement(10, -3)).toBe(7);
     expect(() => applyStockMovement(2, -2.001)).toThrow("Estoque insuficiente");
@@ -17,6 +23,17 @@ describe("regras comerciais", () => {
 
   it("concilia somente dinheiro físico no saldo esperado do caixa", () => {
     expect(calculateCashBalance(50, [{ type: "sale", amount: 20, paymentMethod: "cash" }, { type: "sale", amount: 30, paymentMethod: "pix" }, { type: "supply", amount: 15 }, { type: "withdrawal", amount: 10 }])).toBe(75);
+  });
+
+  it("estorna somente pagamentos e devoluções em dinheiro físico", () => {
+    expect(calculateCashBalance(100, [
+      { type: "sale", amount: 30, paymentMethod: "cash" },
+      { type: "sale", amount: 40, paymentMethod: "pix" },
+      { type: "cancellation", amount: 30, paymentMethod: "cash" },
+      { type: "cancellation", amount: 40, paymentMethod: "pix" },
+      { type: "return", amount: 15, paymentMethod: "cash" },
+      { type: "return", amount: 10, paymentMethod: "debit" },
+    ])).toBe(85);
   });
 
   it("reconhece os papéis autorizados para a operação", () => {
@@ -39,6 +56,12 @@ describe("regras comerciais", () => {
   it("impede venda ou perda maior do que o saldo nos lotes rastreados", () => {
     expect(() => requireBatchCoverage([1, 2], 3.001)).toThrow("lotes");
     expect(requireBatchCoverage([1, 2], 3)).toEqual([1, 2]);
+  });
+
+  it("restaura a parcela correta dos lotes em devoluções sucessivas", () => {
+    expect(allocateBatchRestoration([2, 5], 0, 3)).toEqual([2, 1]);
+    expect(allocateBatchRestoration([2, 5], 3, 2)).toEqual([0, 2]);
+    expect(() => allocateBatchRestoration([2, 5], 0, 8)).toThrow("ultrapassa");
   });
 
   it("registra todos os lotes distribuídos em uma perda sem lote selecionado", () => {

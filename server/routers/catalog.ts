@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createCategory, createCustomer, createProduct, createSupplier, findProductByCode, listCategories, listCustomers, listProducts, listSuppliers, updateProduct } from "../db";
+import { createCategory, createCustomer, createProduct, createSupplier, findProductByCode, importProducts, listCategories, listCustomers, listProducts, listSuppliers, updateCustomerLoyaltyMode, updateProduct } from "../db";
 import { router } from "../_core/trpc";
 import { managementProcedure, salesProcedure, stockProcedure } from "./_permissions";
 
@@ -21,6 +21,7 @@ export const catalogRouter = router({
     scan: salesProcedure.input(z.object({ code: z.string().trim().min(3).max(64) })).mutation(({ input }) => findProductByCode(input.code)),
     create: stockProcedure.input(productInput).mutation(({ input }) => createProduct(input)),
     update: stockProcedure.input(productInput.extend({ id: z.number().int().positive(), active: z.boolean() })).mutation(({ ctx, input }) => updateProduct({ ...input, userId: ctx.user.id })),
+    import: stockProcedure.input(z.object({ items: z.array(z.object({ name: z.string().trim().min(2).max(180), barcode: z.string().trim().max(64).optional(), internalCode: z.string().trim().max(48).optional(), categoryName: z.string().trim().max(120).optional(), unit: z.string().trim().min(1).max(12).default("UN"), costPrice: z.coerce.number().min(0), salePrice: z.coerce.number().min(0), minimumStock: z.coerce.number().min(0) })).min(1).max(500) })).mutation(({ input }) => importProducts(input)),
   }),
   categories: router({
     list: salesProcedure.query(() => listCategories()),
@@ -32,7 +33,8 @@ export const catalogRouter = router({
   }),
   customers: router({
     list: salesProcedure.query(() => listCustomers()),
-    create: salesProcedure.input(z.object({ name: z.string().trim().min(2).max(180), document: z.string().trim().max(32).optional(), phone: z.string().trim().max(32).optional(), email: z.string().email().max(320).optional(), notes: z.string().trim().max(3000).optional() })).mutation(({ input }) => createCustomer(input)),
+    create: salesProcedure.input(z.object({ name: z.string().trim().min(2).max(180), document: z.string().trim().max(32).optional(), phone: z.string().trim().max(32).optional(), email: z.string().email().max(320).optional(), notes: z.string().trim().max(3000).optional(), loyaltyMode: z.enum(["points", "credit"]).default("points") })).mutation(({ input }) => createCustomer(input)),
+    updateLoyaltyMode: salesProcedure.input(z.object({ id: z.number().int().positive(), loyaltyMode: z.enum(["points", "credit"]) })).mutation(({ input }) => updateCustomerLoyaltyMode(input.id, input.loyaltyMode)),
   }),
   management: router({
     health: managementProcedure.query(() => ({ success: true })),

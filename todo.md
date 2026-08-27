@@ -41,17 +41,17 @@
 - [x] Expandir relatórios com perdas, validade, inventário e margem por produto.
 - [x] Validar os novos recursos e atualizar a documentação do sistema.
 - [x] Manter a emissão fiscal como expansão futura, sem configuração de credenciais ou emissão de documentos nesta etapa.
-- [ ] Criar cancelamento de venda com estorno auditável de caixa, estoque e lotes consumidos.
-- [ ] Criar devolução parcial ou total de itens vendidos com rastreabilidade de estoque e caixa.
+- [x] Criar cancelamento de venda com estorno auditável de caixa, estoque e lotes consumidos.
+- [x] Criar devolução parcial ou total de itens vendidos com rastreabilidade de estoque e caixa.
 - [ ] Implementar contas a pagar com fornecedores, vencimentos, baixas e status financeiro.
 - [x] Criar central de alertas internos para estoque crítico, validade, caixa e contas próximas do vencimento.
-- [ ] Implementar importação de catálogo de produtos por arquivo CSV com validação de dados.
-- [ ] Criar impressão de etiquetas de preço com código de barras para os produtos selecionados.
-- [ ] Adicionar análise de faturamento, margem e volume de vendas por categoria.
-- [ ] Implementar metas de vendas por período com acompanhamento de desempenho.
-- [ ] Criar programa de fidelidade com pontos, extrato e uso em vendas de clientes identificados.
-- [ ] Permitir definir por cliente a fidelidade em pontos acumulados ou crédito/desconto disponível.
-- [ ] Registrar movimentações de pontos e créditos com extrato separado e uso controlado no PDV.
+- [x] Implementar importação de catálogo de produtos por arquivo CSV com validação de dados.
+- [x] Criar impressão de etiquetas de preço com código de barras para os produtos selecionados.
+- [x] Adicionar análise de faturamento, margem e volume de vendas por categoria.
+- [x] Implementar metas de vendas por período com acompanhamento de desempenho.
+- [x] Criar programa de fidelidade com pontos, extrato e uso em vendas de clientes identificados.
+- [x] Permitir definir por cliente a fidelidade em pontos acumulados ou crédito/desconto disponível.
+- [x] Registrar movimentações de pontos e créditos com extrato separado e uso controlado no PDV.
 - [ ] Criar testes automatizados, validação responsiva e documentação para os novos módulos.
 - [x] Criar um ícone próprio e reconhecível para a marca Mercadinho Pro.
 - [x] Aplicar o ícone à identificação visual do sistema e à configuração do aplicativo.
@@ -67,3 +67,6 @@
 - [x] Permitir informar uma sigla de unidade personalizada quando a opção padrão não atender ao produto.
 - [ ] Validar o cadastro de produtos com as novas unidades em computador e celular.
 - [ ] Registrar evidência visual autenticada do seletor de unidades e do campo de sigla personalizada em desktop e celular.
+- [x] Tratar vendas históricas sem alocação de lote, bloqueando cancelamentos e devoluções que não possam recompor os lotes com segurança.
+- [ ] Adicionar testes para vendas sem alocação de lote e validar o fluxo autenticado de cancelamento e devolução.
+- [ ] Validar em sessão autenticada os fluxos de cancelamento e devolução na central de vendas, incluindo o bloqueio de vendas históricas sem alocação de lote, e registrar evidência.

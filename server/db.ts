@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, like, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, like, lte, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   accountsPayable,
@@ -16,6 +16,7 @@ import {
   purchaseItems,
   purchases,
   saleItems,
+  saleItemBatchAllocations,
   salePayments,
   saleReturnItems,
   saleReturns,
@@ -25,7 +26,7 @@ import {
   type InsertUser,
   users,
 } from "../drizzle/schema";
-import { applyStockMovement, calculateCashBalance, calculateSaleTotals, formatBatchConsumption, normalizeBarcodeCode, requireBatchCoverage, type PaymentMethod } from "./businessUtils";
+import { allocateBatchRestoration, applyStockMovement, calculateCashBalance, calculateLoyaltyRedemption, calculateSaleTotals, formatBatchConsumption, normalizeBarcodeCode, requireBatchCoverage, type PaymentMethod } from "./businessUtils";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -78,6 +79,67 @@ async function consumeProductBatches(tx: any, productId: number, quantity: numbe
     consumedBatches.push({ id: batch.id, code: batch.code, quantity: quantityFromBatch });
   }
   return consumedBatches;
+}
+
+async function restoreBatchAllocation(tx: any, batchId: number, quantity: number) {
+  const [batch] = await tx.select().from(productBatches).where(eq(productBatches.id, batchId)).limit(1);
+  if (!batch) throw new Error("O lote associado à venda não foi encontrado para restauração.");
+  const availableQuantity = Math.round((toNumber(batch.availableQuantity) + quantity) * 1000) / 1000;
+  await tx
+    .update(productBatches)
+    .set({ availableQuantity: decimal(availableQuantity, 3), status: batch.status === "depleted" ? "active" : batch.status })
+    .where(eq(productBatches.id, batch.id));
+  return { code: batch.code, availableQuantity };
+}
+
+function sliceBatchAllocation(
+  allocations: Array<{ batchId: number; quantity: string | number }>,
+  alreadyRestoredQuantity: number,
+  requestedQuantity: number,
+) {
+  const quantitiesToRestore = allocateBatchRestoration(allocations.map(item => toNumber(item.quantity)), alreadyRestoredQuantity, requestedQuantity);
+  return allocations
+    .map((allocation, index) => ({ batchId: allocation.batchId, quantity: quantitiesToRestore[index] ?? 0 }))
+    .filter(allocation => allocation.quantity > 0);
+}
+
+async function requireBatchRestorationTrace(db: any, saleId: number, items: Array<{ id: number; productId: number }>) {
+  for (const item of items) {
+    const allocations = await db.select({ id: saleItemBatchAllocations.id }).from(saleItemBatchAllocations).where(eq(saleItemBatchAllocations.saleItemId, item.id));
+    if (allocations.length) continue;
+    const [trackedMovement] = await db
+      .select({ id: stockMovements.id })
+      .from(stockMovements)
+      .where(and(eq(stockMovements.saleId, saleId), eq(stockMovements.productId, item.productId), sql`${stockMovements.batchId} is not null`))
+      .limit(1);
+    if (trackedMovement) {
+      throw new Error("Esta venda histórica não possui a distribuição de lotes necessária para um estorno seguro. Registre a devolução manualmente pelo estoque.");
+    }
+  }
+}
+
+async function reverseSaleLoyalty(tx: any, sale: { id: number; customerId: number | null; totalAmount: string | number }, userId: number, returnedAmount: number, description: string) {
+  if (!sale.customerId || returnedAmount <= 0) return;
+  const [customer] = await tx.select().from(customers).where(eq(customers.id, sale.customerId)).limit(1);
+  if (!customer) return;
+  const movements: Array<{ type: "earn" | "redeem" | "adjustment" | "reversal"; points: number; creditAmount: string | number }> = await tx.select({ type: loyaltyTransactions.type, points: loyaltyTransactions.points, creditAmount: loyaltyTransactions.creditAmount }).from(loyaltyTransactions).where(eq(loyaltyTransactions.saleId, sale.id));
+  const totalAmount = toNumber(sale.totalAmount);
+  if (totalAmount <= 0) return;
+  const originalPointsEffect = movements.filter(movement => movement.type !== "reversal").reduce((total, movement) => total + movement.points, 0);
+  const originalCreditEffect = movements.filter(movement => movement.type !== "reversal").reduce((total, movement) => total + toNumber(movement.creditAmount), 0);
+  const existingPointsReversal = movements.filter(movement => movement.type === "reversal").reduce((total, movement) => total + movement.points, 0);
+  const existingCreditReversal = movements.filter(movement => movement.type === "reversal").reduce((total, movement) => total + toNumber(movement.creditAmount), 0);
+  const ratio = Math.min(1, returnedAmount / totalAmount);
+  const targetPointsReversal = -Math.round(originalPointsEffect * ratio);
+  const targetCreditReversal = -Math.round(originalCreditEffect * ratio * 100) / 100;
+  const points = targetPointsReversal - existingPointsReversal;
+  const creditAmount = Math.round((targetCreditReversal - existingCreditReversal) * 100) / 100;
+  if (points === 0 && creditAmount === 0) return;
+  const nextPoints = customer.loyaltyPointsBalance + points;
+  const nextCredit = Math.round((toNumber(customer.loyaltyCreditBalance) + creditAmount) * 100) / 100;
+  if (nextPoints < 0 || nextCredit < 0) throw new Error("A fidelidade desta venda já foi utilizada em outra operação e não pode ser estornada automaticamente.");
+  await tx.update(customers).set({ loyaltyPointsBalance: nextPoints, loyaltyCreditBalance: decimal(nextCredit) }).where(eq(customers.id, customer.id));
+  await tx.insert(loyaltyTransactions).values({ customerId: customer.id, saleId: sale.id, userId, type: "reversal", points, creditAmount: decimal(creditAmount), description });
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {
@@ -222,6 +284,60 @@ export async function createProduct(input: {
   return { success: true } as const;
 }
 
+export async function importProducts(input: {
+  items: Array<{
+    name: string;
+    barcode?: string;
+    internalCode?: string;
+    categoryName?: string;
+    unit: string;
+    costPrice: number;
+    salePrice: number;
+    minimumStock: number;
+  }>;
+}) {
+  const db = await requireDb();
+  if (!input.items.length) throw new Error("Inclua ao menos um produto válido para importar.");
+  if (input.items.length > 500) throw new Error("A importação aceita até 500 produtos por vez.");
+  const normalizedItems = input.items.map(item => ({
+    ...item,
+    name: item.name.trim(),
+    barcode: item.barcode?.trim() || undefined,
+    internalCode: item.internalCode?.trim() || undefined,
+    categoryName: item.categoryName?.trim() || undefined,
+    unit: item.unit.trim().toUpperCase(),
+  }));
+  const codes = normalizedItems.flatMap(item => [item.barcode, item.internalCode].filter((code): code is string => Boolean(code)));
+  if (new Set(codes).size !== codes.length) throw new Error("Há códigos de barras ou internos repetidos no próprio arquivo.");
+  const existingProducts = await db.select({ barcode: products.barcode, internalCode: products.internalCode }).from(products);
+  const existingCodes = new Set(existingProducts.flatMap(item => [item.barcode, item.internalCode].filter((code): code is string => Boolean(code))));
+  const duplicatedExistingCode = codes.find(code => existingCodes.has(code));
+  if (duplicatedExistingCode) throw new Error(`O código ${duplicatedExistingCode} já pertence a um produto cadastrado.`);
+
+  await db.transaction(async tx => {
+    const categoriesByName = new Map((await tx.select().from(categories)).map(category => [category.name.trim().toLocaleLowerCase("pt-BR"), category]));
+    for (const categoryName of Array.from(new Set(normalizedItems.map(item => item.categoryName).filter((name): name is string => Boolean(name))))) {
+      const key = categoryName.toLocaleLowerCase("pt-BR");
+      if (categoriesByName.has(key)) continue;
+      await tx.insert(categories).values({ name: categoryName });
+      const [createdCategory] = await tx.select().from(categories).where(eq(categories.name, categoryName)).orderBy(desc(categories.id)).limit(1);
+      if (!createdCategory) throw new Error(`Não foi possível criar a categoria ${categoryName}.`);
+      categoriesByName.set(key, createdCategory);
+    }
+    await tx.insert(products).values(normalizedItems.map(item => ({
+      barcode: item.barcode ?? null,
+      internalCode: item.internalCode ?? null,
+      name: item.name,
+      categoryId: item.categoryName ? categoriesByName.get(item.categoryName.toLocaleLowerCase("pt-BR"))?.id ?? null : null,
+      unit: item.unit,
+      costPrice: decimal(item.costPrice),
+      salePrice: decimal(item.salePrice),
+      minimumStock: decimal(item.minimumStock, 3),
+    })));
+  });
+  return { success: true, importedCount: normalizedItems.length } as const;
+}
+
 export async function updateProduct(input: {
   id: number;
   userId: number;
@@ -295,10 +411,42 @@ export async function listCustomers() {
   return db.select().from(customers).where(eq(customers.active, true)).orderBy(customers.name);
 }
 
-export async function createCustomer(input: { name: string; document?: string; phone?: string; email?: string; notes?: string }) {
+export async function createCustomer(input: { name: string; document?: string; phone?: string; email?: string; notes?: string; loyaltyMode?: "points" | "credit" }) {
   const db = await requireDb();
   await db.insert(customers).values({ ...input, name: input.name.trim() });
   return { success: true } as const;
+}
+
+export async function updateCustomerLoyaltyMode(customerId: number, loyaltyMode: "points" | "credit") {
+  const db = await requireDb();
+  const [customer] = await db.select({ id: customers.id }).from(customers).where(and(eq(customers.id, customerId), eq(customers.active, true))).limit(1);
+  if (!customer) throw new Error("Cliente não encontrado.");
+  await db.update(customers).set({ loyaltyMode }).where(eq(customers.id, customerId));
+  return { success: true } as const;
+}
+
+export async function listLoyaltyTransactions(customerId?: number) {
+  const db = await requireDb();
+  return db.select({ id: loyaltyTransactions.id, customerId: loyaltyTransactions.customerId, customerName: customers.name, saleId: loyaltyTransactions.saleId, type: loyaltyTransactions.type, points: loyaltyTransactions.points, creditAmount: loyaltyTransactions.creditAmount, description: loyaltyTransactions.description, createdAt: loyaltyTransactions.createdAt }).from(loyaltyTransactions).innerJoin(customers, eq(loyaltyTransactions.customerId, customers.id)).where(customerId ? eq(loyaltyTransactions.customerId, customerId) : undefined).orderBy(desc(loyaltyTransactions.createdAt)).limit(100);
+}
+
+export async function adjustCustomerLoyalty(input: { customerId: number; userId: number; points?: number; creditAmount?: number; description: string }) {
+  const db = await requireDb();
+  const [customer] = await db.select().from(customers).where(and(eq(customers.id, input.customerId), eq(customers.active, true))).limit(1);
+  if (!customer) throw new Error("Cliente não encontrado.");
+  const points = Math.trunc(input.points ?? 0);
+  const creditAmount = Math.round((input.creditAmount ?? 0) * 100) / 100;
+  if (customer.loyaltyMode === "points" && creditAmount !== 0) throw new Error("Este cliente utiliza a modalidade de pontos.");
+  if (customer.loyaltyMode === "credit" && points !== 0) throw new Error("Este cliente utiliza a modalidade de crédito.");
+  if (points === 0 && creditAmount === 0) throw new Error("Informe um ajuste de pontos ou crédito.");
+  const nextPoints = customer.loyaltyPointsBalance + points;
+  const nextCredit = Math.round((toNumber(customer.loyaltyCreditBalance) + creditAmount) * 100) / 100;
+  if (nextPoints < 0 || nextCredit < 0) throw new Error("O ajuste não pode deixar o saldo de fidelidade negativo.");
+  await db.transaction(async tx => {
+    await tx.update(customers).set({ loyaltyPointsBalance: nextPoints, loyaltyCreditBalance: decimal(nextCredit) }).where(eq(customers.id, customer.id));
+    await tx.insert(loyaltyTransactions).values({ customerId: customer.id, userId: input.userId, type: "adjustment", points, creditAmount: decimal(creditAmount), description: input.description.trim() });
+  });
+  return { success: true, pointsBalance: nextPoints, creditBalance: nextCredit } as const;
 }
 
 export async function listStockMovements() {
@@ -560,6 +708,7 @@ export async function createSale(input: {
   userId: number;
   customerId?: number | null;
   discountAmount: number;
+  loyaltyRedemption?: { points?: number; creditAmount?: number };
   notes?: string;
   items: Array<{ productId: number; quantity: number }>;
   payments: Array<{ method: PaymentMethod; amount: number; reference?: string }>;
@@ -568,19 +717,35 @@ export async function createSale(input: {
   if (!input.items.length) throw new Error("Adicione ao menos um item para concluir a venda.");
   const cash = await getOpenCashSession();
   if (!cash) throw new Error("Abra o caixa antes de finalizar uma venda.");
-  const productIds = Array.from(new Set(input.items.map(item => item.productId)));
+  const normalizedItems = Array.from(
+    input.items.reduce((itemsByProduct, item) => {
+      itemsByProduct.set(item.productId, (itemsByProduct.get(item.productId) ?? 0) + item.quantity);
+      return itemsByProduct;
+    }, new Map<number, number>()),
+    ([productId, quantity]) => ({ productId, quantity }),
+  );
+  const productIds = normalizedItems.map(item => item.productId);
   const productRows = await db.select().from(products).where(and(inArray(products.id, productIds), eq(products.active, true)));
   if (productRows.length !== productIds.length) throw new Error("Um ou mais produtos não estão disponíveis.");
   const productsById = new Map(productRows.map(product => [product.id, product]));
   const activePromotions = await listActivePromotions();
   const promotionsByProductId = new Map(activePromotions.map(promotion => [promotion.productId, promotion]));
-  const detailedItems = input.items.map(item => {
+  const detailedItems = normalizedItems.map(item => {
     const product = productsById.get(item.productId);
     if (!product) throw new Error("Produto não encontrado.");
     const promotion = promotionsByProductId.get(product.id);
     return { ...item, product, unitPrice: promotion ? toNumber(promotion.promotionalPrice) : toNumber(product.salePrice), costPrice: toNumber(product.costPrice) };
   });
-  const totals = calculateSaleTotals(detailedItems, input.discountAmount);
+  const [customer] = input.customerId ? await db.select().from(customers).where(and(eq(customers.id, input.customerId), eq(customers.active, true))).limit(1) : [null];
+  if (input.customerId && !customer) throw new Error("Cliente não encontrado ou inativo.");
+  const requestedPoints = Math.max(0, Math.trunc(input.loyaltyRedemption?.points ?? 0));
+  const requestedCredit = Math.max(0, Math.round((input.loyaltyRedemption?.creditAmount ?? 0) * 100) / 100);
+  if (customer?.loyaltyMode === "points" && requestedCredit > 0) throw new Error("Este cliente utiliza a modalidade de pontos.");
+  if (customer?.loyaltyMode === "credit" && requestedPoints > 0) throw new Error("Este cliente utiliza a modalidade de crédito.");
+  if (!customer && (requestedPoints > 0 || requestedCredit > 0)) throw new Error("Selecione um cliente para usar fidelidade.");
+  const subtotalBeforeLoyalty = calculateSaleTotals(detailedItems, input.discountAmount).totalAmount;
+  const loyaltyBenefit = customer ? calculateLoyaltyRedemption(customer.loyaltyMode, customer.loyaltyMode === "points" ? customer.loyaltyPointsBalance : toNumber(customer.loyaltyCreditBalance), customer.loyaltyMode === "points" ? requestedPoints : requestedCredit, subtotalBeforeLoyalty) : { points: 0, creditAmount: 0, discountAmount: 0 };
+  const totals = calculateSaleTotals(detailedItems, input.discountAmount + loyaltyBenefit.discountAmount);
   const paymentsTotal = Math.round(input.payments.reduce((total, payment) => total + payment.amount, 0) * 100) / 100;
   if (!input.payments.length || Math.abs(paymentsTotal - totals.totalAmount) > 0.009) {
     throw new Error("O total dos pagamentos deve ser igual ao total da venda.");
@@ -604,6 +769,19 @@ export async function createSale(input: {
     });
     const [sale] = await tx.select({ id: sales.id }).from(sales).where(eq(sales.code, saleCode)).limit(1);
     if (!sale) throw new Error("Não foi possível registrar a venda.");
+    if (customer) {
+      const earnedPoints = customer.loyaltyMode === "points" ? Math.floor(totals.totalAmount) : 0;
+      const earnedCredit = customer.loyaltyMode === "credit" ? Math.floor(totals.totalAmount) / 100 : 0;
+      const nextPoints = customer.loyaltyPointsBalance - loyaltyBenefit.points + earnedPoints;
+      const nextCredit = Math.round((toNumber(customer.loyaltyCreditBalance) - loyaltyBenefit.creditAmount + earnedCredit) * 100) / 100;
+      await tx.update(customers).set({ loyaltyPointsBalance: nextPoints, loyaltyCreditBalance: decimal(nextCredit) }).where(eq(customers.id, customer.id));
+      if (loyaltyBenefit.points > 0 || loyaltyBenefit.creditAmount > 0) {
+        await tx.insert(loyaltyTransactions).values({ customerId: customer.id, saleId: sale.id, userId: input.userId, type: "redeem", points: -loyaltyBenefit.points, creditAmount: decimal(-loyaltyBenefit.creditAmount), description: `Uso de fidelidade na venda ${saleCode}` });
+      }
+      if (earnedPoints > 0 || earnedCredit > 0) {
+        await tx.insert(loyaltyTransactions).values({ customerId: customer.id, saleId: sale.id, userId: input.userId, type: "earn", points: earnedPoints, creditAmount: decimal(earnedCredit), description: `Acúmulo de fidelidade na venda ${saleCode}` });
+      }
+    }
     await tx.insert(saleItems).values(detailedItems.map(item => ({
       saleId: sale.id,
       productId: item.product.id,
@@ -613,6 +791,8 @@ export async function createSale(input: {
       costPrice: decimal(item.costPrice),
       totalAmount: decimal(Math.round(item.quantity * item.unitPrice * 100) / 100),
     })));
+    const recordedItems = await tx.select().from(saleItems).where(eq(saleItems.saleId, sale.id));
+    const saleItemsByProductId = new Map(recordedItems.map(item => [item.productId, item]));
     await tx.insert(salePayments).values(input.payments.map(payment => ({
       saleId: sale.id,
       method: payment.method,
@@ -632,6 +812,11 @@ export async function createSale(input: {
       const previousQuantity = toNumber(item.product.stockQuantity);
       const currentQuantity = applyStockMovement(previousQuantity, -item.quantity);
       const consumedBatches = await consumeProductBatches(tx, item.product.id, item.quantity);
+      const recordedItem = saleItemsByProductId.get(item.product.id);
+      if (!recordedItem) throw new Error("Não foi possível vincular o item aos lotes consumidos.");
+      if (consumedBatches.length) {
+        await tx.insert(saleItemBatchAllocations).values(consumedBatches.map(batch => ({ saleItemId: recordedItem.id, batchId: batch.id, quantity: decimal(batch.quantity, 3) })));
+      }
       const batchSummary = formatBatchConsumption(consumedBatches) ? ` · ${formatBatchConsumption(consumedBatches)}` : "";
       await tx.update(products).set({ stockQuantity: decimal(currentQuantity, 3) }).where(eq(products.id, item.product.id));
       await tx.insert(stockMovements).values({
@@ -656,11 +841,146 @@ export async function listRecentSales() {
 }
 
 export async function cancelSale(saleId: number, userId: number, reason: string) {
-  const db = await requireDb(); const [sale] = await db.select().from(sales).where(eq(sales.id, saleId)).limit(1); if (!sale || sale.status !== "completed") throw new Error("Venda não está disponível para cancelamento."); const items = await db.select().from(saleItems).where(eq(saleItems.saleId, saleId)); const payments = await db.select().from(salePayments).where(eq(salePayments.saleId, saleId));
-  await db.transaction(async tx => { await tx.update(sales).set({ status: "cancelled", cancelledAt: new Date(), notes: `${sale.notes || ""}\nCancelada: ${reason}`.trim() }).where(eq(sales.id, saleId)); for (const item of items) { const [product] = await tx.select().from(products).where(eq(products.id, item.productId)).limit(1); if (!product) continue; const previous = toNumber(product.stockQuantity), next = previous + toNumber(item.quantity); await tx.update(products).set({ stockQuantity: decimal(next, 3) }).where(eq(products.id, product.id)); await tx.insert(stockMovements).values({ productId: product.id, saleId, userId, type: "cancellation", quantity: decimal(toNumber(item.quantity), 3), previousQuantity: decimal(previous, 3), currentQuantity: decimal(next, 3), reason: `Cancelamento ${sale.code}: ${reason}` }); } if (sale.cashSessionId) await tx.insert(cashMovements).values(payments.map(payment => ({ cashSessionId: sale.cashSessionId!, saleId, userId, type: "cancellation" as const, paymentMethod: payment.method, amount: decimal(-toNumber(payment.amount)), description: `Cancelamento ${sale.code}` }))); }); return { success: true } as const;
+  const db = await requireDb();
+  const [sale] = await db.select().from(sales).where(eq(sales.id, saleId)).limit(1);
+  if (!sale || sale.status !== "completed") throw new Error("Venda não está disponível para cancelamento.");
+  const openCashSession = await getOpenCashSession();
+  if (sale.cashSessionId && (!openCashSession || openCashSession.id !== sale.cashSessionId)) {
+    throw new Error("Esta venda pertence a um caixa já fechado. Use o fluxo de devolução para registrar o reembolso no caixa atual.");
+  }
+  const [existingReturn] = await db.select({ id: saleReturns.id }).from(saleReturns).where(eq(saleReturns.saleId, saleId)).limit(1);
+  if (existingReturn) throw new Error("Esta venda já possui devolução registrada. Conclua os retornos pelo histórico de devoluções.");
+  const items = await db.select().from(saleItems).where(eq(saleItems.saleId, saleId));
+  const payments = await db.select().from(salePayments).where(eq(salePayments.saleId, saleId));
+  await requireBatchRestorationTrace(db, saleId, items);
+
+  await db.transaction(async tx => {
+    await tx.update(sales).set({ status: "cancelled", cancelledAt: new Date(), notes: `${sale.notes || ""}\nCancelada: ${reason}`.trim() }).where(eq(sales.id, saleId));
+    await reverseSaleLoyalty(tx, sale, userId, toNumber(sale.totalAmount), `Estorno de fidelidade no cancelamento ${sale.code}`);
+    for (const item of items) {
+      const [product] = await tx.select().from(products).where(eq(products.id, item.productId)).limit(1);
+      if (!product) throw new Error("O produto de uma venda cancelada não foi encontrado.");
+      const previousQuantity = toNumber(product.stockQuantity);
+      const currentQuantity = applyStockMovement(previousQuantity, toNumber(item.quantity));
+      const allocations = await tx.select({ batchId: saleItemBatchAllocations.batchId, quantity: saleItemBatchAllocations.quantity }).from(saleItemBatchAllocations).where(eq(saleItemBatchAllocations.saleItemId, item.id));
+      const restoredBatches: Array<{ id: number; code: string | null; quantity: number }> = [];
+      for (const allocation of allocations) {
+        const restored = await restoreBatchAllocation(tx, allocation.batchId, toNumber(allocation.quantity));
+        restoredBatches.push({ id: allocation.batchId, code: restored.code, quantity: toNumber(allocation.quantity) });
+      }
+      await tx.update(products).set({ stockQuantity: decimal(currentQuantity, 3) }).where(eq(products.id, product.id));
+      await tx.insert(stockMovements).values({
+        productId: product.id,
+        saleId,
+        batchId: restoredBatches[0]?.id ?? null,
+        userId,
+        type: "cancellation",
+        quantity: decimal(toNumber(item.quantity), 3),
+        previousQuantity: decimal(previousQuantity, 3),
+        currentQuantity: decimal(currentQuantity, 3),
+        reason: [`Cancelamento ${sale.code}: ${reason}`, formatBatchConsumption(restoredBatches)].filter(Boolean).join(" · "),
+      });
+    }
+    if (sale.cashSessionId && payments.length) {
+      await tx.insert(cashMovements).values(payments.map(payment => ({
+        cashSessionId: sale.cashSessionId!,
+        saleId,
+        userId,
+        type: "cancellation" as const,
+        paymentMethod: payment.method,
+        amount: decimal(toNumber(payment.amount)),
+        description: `Cancelamento ${sale.code}: ${reason}`,
+      })));
+    }
+  });
+  return { success: true } as const;
 }
 
-export async function listSaleItemsForReturn(saleId: number) { const db = await requireDb(); return db.select({ id: saleItems.id, productId: saleItems.productId, productName: saleItems.productName, quantity: saleItems.quantity, totalAmount: saleItems.totalAmount }).from(saleItems).innerJoin(sales, eq(saleItems.saleId, sales.id)).where(and(eq(saleItems.saleId, saleId), eq(sales.status, "completed"))); }
+export async function listSaleItemsForReturn(saleId: number) {
+  const db = await requireDb();
+  return db
+    .select({
+      id: saleItems.id,
+      productId: saleItems.productId,
+      productName: saleItems.productName,
+      quantity: saleItems.quantity,
+      totalAmount: saleItems.totalAmount,
+      returnedQuantity: sql<string>`coalesce(sum(${saleReturnItems.quantity}), 0)`,
+    })
+    .from(saleItems)
+    .innerJoin(sales, eq(saleItems.saleId, sales.id))
+    .leftJoin(saleReturnItems, eq(saleReturnItems.saleItemId, saleItems.id))
+    .where(and(eq(saleItems.saleId, saleId), eq(sales.status, "completed")))
+    .groupBy(saleItems.id, saleItems.productId, saleItems.productName, saleItems.quantity, saleItems.totalAmount);
+}
+
+export async function createSaleReturn(input: {
+  saleId: number;
+  userId: number;
+  reason: string;
+  refundMethod: PaymentMethod;
+  items: Array<{ saleItemId: number; quantity: number }>;
+}) {
+  const db = await requireDb();
+  if (!input.items.length) throw new Error("Selecione ao menos um item para devolver.");
+  const [sale] = await db.select().from(sales).where(eq(sales.id, input.saleId)).limit(1);
+  if (!sale || sale.status !== "completed") throw new Error("A venda não está disponível para devolução.");
+  const cashSession = await getOpenCashSession();
+  if (!cashSession) throw new Error("Abra o caixa antes de registrar uma devolução.");
+  const requestedItems = Array.from(input.items.reduce((itemsBySaleItem, item) => {
+    itemsBySaleItem.set(item.saleItemId, (itemsBySaleItem.get(item.saleItemId) ?? 0) + item.quantity);
+    return itemsBySaleItem;
+  }, new Map<number, number>()), ([saleItemId, quantity]) => ({ saleItemId, quantity }));
+  if (requestedItems.some(item => !Number.isFinite(item.quantity) || item.quantity <= 0)) throw new Error("A quantidade devolvida deve ser positiva.");
+  const saleItemIds = requestedItems.map(item => item.saleItemId);
+  const originalItems = await db.select().from(saleItems).where(and(eq(saleItems.saleId, sale.id), inArray(saleItems.id, saleItemIds)));
+  if (originalItems.length !== saleItemIds.length) throw new Error("Um ou mais itens não pertencem à venda selecionada.");
+  await requireBatchRestorationTrace(db, sale.id, originalItems);
+  const previouslyReturned = await db.select({ saleItemId: saleReturnItems.saleItemId, quantity: saleReturnItems.quantity }).from(saleReturnItems).where(inArray(saleReturnItems.saleItemId, saleItemIds));
+  const [previousReturnAmount] = await db.select({ amount: sql<string>`coalesce(sum(${saleReturns.totalAmount}), 0)` }).from(saleReturns).where(eq(saleReturns.saleId, sale.id));
+  const returnedBySaleItemId = new Map<number, number>();
+  for (const item of previouslyReturned) returnedBySaleItemId.set(item.saleItemId, (returnedBySaleItemId.get(item.saleItemId) ?? 0) + toNumber(item.quantity));
+  const requestedBySaleItemId = new Map(requestedItems.map(item => [item.saleItemId, item.quantity]));
+  const saleItemsById = new Map(originalItems.map(item => [item.id, item]));
+  const discountFactor = toNumber(sale.subtotal) > 0 ? toNumber(sale.totalAmount) / toNumber(sale.subtotal) : 0;
+  const returnDetails = requestedItems.map(requested => {
+    const original = saleItemsById.get(requested.saleItemId);
+    if (!original) throw new Error("Item de venda não encontrado.");
+    const originalQuantity = toNumber(original.quantity);
+    const returnedQuantity = returnedBySaleItemId.get(original.id) ?? 0;
+    if (requested.quantity + returnedQuantity > originalQuantity + 0.0009) throw new Error(`A quantidade devolvida de ${original.productName} excede o saldo vendido.`);
+    const lineAmount = Math.round((toNumber(original.totalAmount) * (requested.quantity / originalQuantity) * discountFactor) * 100) / 100;
+    return { ...requested, original, returnedQuantity, amount: lineAmount };
+  });
+  const totalAmount = Math.round(returnDetails.reduce((total, item) => total + item.amount, 0) * 100) / 100;
+  if (totalAmount <= 0) throw new Error("O valor calculado para a devolução é inválido.");
+  const returnCode = `D-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
+
+  await db.transaction(async tx => {
+    await tx.insert(saleReturns).values({ code: returnCode, saleId: sale.id, cashSessionId: cashSession.id, userId: input.userId, totalAmount: decimal(totalAmount), refundMethod: input.refundMethod, reason: input.reason.trim() });
+    const [saleReturn] = await tx.select({ id: saleReturns.id }).from(saleReturns).where(eq(saleReturns.code, returnCode)).limit(1);
+    if (!saleReturn) throw new Error("Não foi possível registrar a devolução.");
+    await reverseSaleLoyalty(tx, sale, input.userId, toNumber(previousReturnAmount?.amount) + totalAmount, `Estorno proporcional de fidelidade na devolução ${returnCode}`);
+    for (const detail of returnDetails) {
+      const [product] = await tx.select().from(products).where(eq(products.id, detail.original.productId)).limit(1);
+      if (!product) throw new Error("O produto da devolução não foi encontrado.");
+      const allocations = await tx.select({ batchId: saleItemBatchAllocations.batchId, quantity: saleItemBatchAllocations.quantity }).from(saleItemBatchAllocations).where(eq(saleItemBatchAllocations.saleItemId, detail.original.id));
+      const batchesToRestore = allocations.length ? sliceBatchAllocation(allocations, detail.returnedQuantity, detail.quantity) : [];
+      const restoredBatches: Array<{ id: number; code: string | null; quantity: number }> = [];
+      for (const allocation of batchesToRestore) {
+        const restored = await restoreBatchAllocation(tx, allocation.batchId, allocation.quantity);
+        restoredBatches.push({ id: allocation.batchId, code: restored.code, quantity: allocation.quantity });
+      }
+      const previousQuantity = toNumber(product.stockQuantity);
+      const currentQuantity = applyStockMovement(previousQuantity, detail.quantity);
+      await tx.update(products).set({ stockQuantity: decimal(currentQuantity, 3) }).where(eq(products.id, product.id));
+      await tx.insert(saleReturnItems).values({ saleReturnId: saleReturn.id, saleItemId: detail.original.id, productId: product.id, quantity: decimal(detail.quantity, 3), amount: decimal(detail.amount) });
+      await tx.insert(stockMovements).values({ productId: product.id, saleId: sale.id, batchId: restoredBatches[0]?.id ?? null, userId: input.userId, type: "return", quantity: decimal(detail.quantity, 3), previousQuantity: decimal(previousQuantity, 3), currentQuantity: decimal(currentQuantity, 3), reason: [`Devolução ${returnCode}: ${input.reason.trim()}`, formatBatchConsumption(restoredBatches)].filter(Boolean).join(" · ") });
+    }
+    await tx.insert(cashMovements).values({ cashSessionId: cashSession.id, saleId: sale.id, userId: input.userId, type: "return", paymentMethod: input.refundMethod, amount: decimal(totalAmount), description: `Devolução ${returnCode}: ${input.reason.trim()}` });
+  });
+  return { success: true, code: returnCode, totalAmount } as const;
+}
 
 export async function getReportsOverview() {
   const db = await requireDb();
@@ -693,7 +1013,8 @@ export async function getReportsOverview() {
   const [inventorySummary] = await db.select({ count: sql<number>`count(${inventoryCounts.id})`, divergence: sql<string>`coalesce(sum(abs(${inventoryCounts.differenceQuantity})), 0)` }).from(inventoryCounts);
   const [marginSummary] = await db.select({ margin: sql<string>`coalesce(sum(${saleItems.totalAmount} - (${saleItems.costPrice} * ${saleItems.quantity})), 0)` }).from(saleItems).innerJoin(sales, eq(saleItems.saleId, sales.id)).where(and(eq(sales.status, "completed"), gte(sales.createdAt, start)));
   const marginByProduct = await db.select({ productName: saleItems.productName, revenue: sql<string>`coalesce(sum(${saleItems.totalAmount}), 0)`, margin: sql<string>`coalesce(sum(${saleItems.totalAmount} - (${saleItems.costPrice} * ${saleItems.quantity})), 0)` }).from(saleItems).innerJoin(sales, eq(saleItems.saleId, sales.id)).where(and(eq(sales.status, "completed"), gte(sales.createdAt, start))).groupBy(saleItems.productName).orderBy(desc(sql`sum(${saleItems.totalAmount} - (${saleItems.costPrice} * ${saleItems.quantity}))`)).limit(10);
-  return { salesTodayAmount: toNumber(salesToday?.total), salesTodayCount: Number(salesToday?.count ?? 0), topProducts, lowStockItems, latestCashMovements, lossCount: Number(losses?.count ?? 0), lossQuantity: toNumber(losses?.quantity), expiringBatches, inventoryCount: Number(inventorySummary?.count ?? 0), inventoryDivergence: toNumber(inventorySummary?.divergence), grossMarginToday: toNumber(marginSummary?.margin), marginByProduct, reportDate: today };
+  const categoryPerformance = await db.select({ categoryName: sql<string>`coalesce(${categories.name}, 'Sem categoria')`, revenue: sql<string>`coalesce(sum(${saleItems.totalAmount}), 0)`, quantity: sql<string>`coalesce(sum(${saleItems.quantity}), 0)`, margin: sql<string>`coalesce(sum(${saleItems.totalAmount} - (${saleItems.costPrice} * ${saleItems.quantity})), 0)` }).from(saleItems).innerJoin(sales, eq(saleItems.saleId, sales.id)).innerJoin(products, eq(saleItems.productId, products.id)).leftJoin(categories, eq(products.categoryId, categories.id)).where(and(eq(sales.status, "completed"), gte(sales.createdAt, start))).groupBy(categories.id, categories.name).orderBy(desc(sql`sum(${saleItems.totalAmount})`)).limit(12);
+  return { salesTodayAmount: toNumber(salesToday?.total), salesTodayCount: Number(salesToday?.count ?? 0), topProducts, lowStockItems, latestCashMovements, lossCount: Number(losses?.count ?? 0), lossQuantity: toNumber(losses?.quantity), expiringBatches, inventoryCount: Number(inventorySummary?.count ?? 0), inventoryDivergence: toNumber(inventorySummary?.divergence), grossMarginToday: toNumber(marginSummary?.margin), marginByProduct, categoryPerformance, reportDate: today };
 }
 
 export async function listRecentActivity() {
@@ -742,6 +1063,26 @@ export async function payAccountPayable(id: number) {
   return { success: true } as const;
 }
 
-export async function listSalesGoals() { const db = await requireDb(); return db.select().from(salesGoals).orderBy(desc(salesGoals.createdAt)); }
-export async function createSalesGoal(input: { name: string; startsOn: string; endsOn: string; targetAmount: number }) { const db = await requireDb(); await db.insert(salesGoals).values({ ...input, targetAmount: decimal(input.targetAmount) }); return { success: true } as const; }
-export async function listLoyaltyBalances() { const db = await requireDb(); return db.select({ customerId: customers.id, name: customers.name, points: sql<number>`coalesce(sum(${loyaltyTransactions.points}), 0)` }).from(customers).leftJoin(loyaltyTransactions, eq(loyaltyTransactions.customerId, customers.id)).groupBy(customers.id, customers.name).orderBy(desc(sql`coalesce(sum(${loyaltyTransactions.points}), 0)`)).limit(100); }
+export async function listSalesGoals() {
+  const db = await requireDb();
+  const goals = await db.select().from(salesGoals).orderBy(desc(salesGoals.createdAt));
+  return Promise.all(goals.map(async goal => {
+    const startDate = new Date(`${goal.startsOn}T00:00:00.000Z`);
+    const endDate = new Date(`${goal.endsOn}T23:59:59.999Z`);
+    const [progress] = await db.select({ amount: sql<string>`coalesce(sum(${sales.totalAmount}), 0)`, salesCount: sql<number>`count(${sales.id})` }).from(sales).where(and(eq(sales.status, "completed"), gte(sales.createdAt, startDate), lte(sales.createdAt, endDate)));
+    const targetAmount = toNumber(goal.targetAmount);
+    const currentAmount = toNumber(progress?.amount);
+    return { ...goal, currentAmount, salesCount: Number(progress?.salesCount ?? 0), progressPercent: targetAmount > 0 ? Math.min(100, Math.round((currentAmount / targetAmount) * 1000) / 10) : 0 };
+  }));
+}
+
+export async function createSalesGoal(input: { name: string; startsOn: string; endsOn: string; targetAmount: number }) {
+  if (input.endsOn < input.startsOn) throw new Error("A data final da meta deve ser igual ou posterior à data inicial.");
+  const db = await requireDb();
+  await db.insert(salesGoals).values({ ...input, targetAmount: decimal(input.targetAmount) });
+  return { success: true } as const;
+}
+export async function listLoyaltyBalances() {
+  const db = await requireDb();
+  return db.select({ customerId: customers.id, name: customers.name, loyaltyMode: customers.loyaltyMode, pointsBalance: customers.loyaltyPointsBalance, creditBalance: customers.loyaltyCreditBalance }).from(customers).where(eq(customers.active, true)).orderBy(customers.name).limit(100);
+}

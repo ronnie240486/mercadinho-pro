@@ -7,20 +7,24 @@ O **Mercadinho Pro** é um sistema web responsivo para organizar a rotina comerc
 | Módulo | Recursos implementados |
 |---|---|
 | Visão geral | Indicadores do dia, status de caixa, alertas de estoque e linha do tempo de atividades. |
-| Produtos | Cadastro, consulta, busca, edição e exportação de produtos com códigos, categoria, preços e estoque mínimo. |
-| PDV | Busca por nome, código interno ou barras, carrinho, desconto, cliente e pagamentos por dinheiro, cartão ou PIX; leitura por leitor USB/Bluetooth e por câmera em navegadores compatíveis. |
+| Produtos | Cadastro, consulta, busca, edição e exportação de produtos com códigos, categoria, preços, estoque mínimo e unidades comerciais padronizadas ou personalizadas. |
+| PDV | Busca por nome, código interno ou barras, carrinho, desconto, cliente e pagamentos por dinheiro, cartão ou PIX; leitura por leitor USB/Bluetooth e por câmera em navegadores compatíveis; uso de pontos ou crédito de fidelidade. |
 | Estoque | Entradas, saídas operacionais, ajustes, devoluções, perdas, histórico e alertas de saldo mínimo. |
 | Compras | Recebimento de vários produtos por fornecedor, com atualização automática de custo e entrada de mercadoria no estoque. |
 | Inventário | Contagem por leitor de código de barras, ajuste auditável e histórico de divergências. |
 | Validade e perdas | Lotes, validade, alertas de vencimento e baixa rastreável por avaria, vencimento ou descarte. |
 | Preços e promoções | Histórico de alterações, ofertas com período de vigência e aplicação automática do preço promocional no PDV. |
 | Caixa | Abertura, suprimento, sangria, acompanhamento de saldo físico e fechamento com conferência de diferença. |
-| Cadastros | Fornecedores, clientes, categorias e administração de usuários. |
-| Relatórios | Vendas, ticket médio, produtos mais vendidos, estoque em atenção, movimentações de caixa e exportação em CSV. |
+| Cadastros | Fornecedores, clientes, categorias e administração de usuários, com escolha individual entre fidelidade por pontos ou crédito/desconto. |
+| Vendas e devoluções | Histórico de vendas, cancelamento no caixa original, devolução parcial ou total, estorno financeiro e recomposição auditável de estoque e lotes. |
+| Ferramentas | Importação transacional de catálogo por CSV com prévia e validação, além de etiquetas A4 com preço e código de barras selecionáveis. |
+| Metas | Criação de objetivos por período, acompanhamento de realizado, percentual e valor restante. |
+| Fidelidade | Saldos e extrato por cliente, ajustes auditáveis e uso de pontos ou crédito no PDV. |
+| Relatórios | Vendas, ticket médio, produtos mais vendidos, desempenho por categoria, margem, estoque em atenção, movimentações de caixa e exportação em CSV. |
 
 ## Identidade e visualização
 
-O sistema usa uma marca vetorial própria, presente na entrada, na navegação e no favicon. O controle de perfil permite alternar entre os modos claro e escuro; a escolha fica salva neste navegador para a próxima utilização. O modo escuro preserva a paleta verde do Mercadinho Pro com superfícies, bordas e textos adaptados para leitura operacional.
+O sistema usa o logotipo oficial fornecido para o Mercadinho Pro, presente na entrada, na navegação e no favicon. A identidade visual combina **grafite, dourado e prata**. O controle de perfil permite alternar entre os modos claro e escuro; a escolha fica salva neste navegador para a próxima utilização, com superfícies, bordas e textos ajustados para leitura operacional.
 
 ## Papéis de operação
 
@@ -33,14 +37,14 @@ O sistema usa uma marca vetorial própria, presente na entrada, na navegação e
 
 > **Regra de integridade:** uma venda concluída registra os itens, os pagamentos, a movimentação de caixa e a baixa do estoque. Compras e ajustes registram a origem da alteração e o saldo anterior e posterior do produto.
 
-## Próximos incrementos recomendados
+## Evoluções futuras
 
 | Prioridade | Incremento |
 |---|---|
-| Alta | Cancelamento de venda com estorno rastreável de estoque, caixa e lotes. |
-| Média | Importação inicial de catálogo e recebimentos por planilha. |
-| Média | Etiquetas de preço, impressão de comprovante e integração com equipamentos fiscais quando necessário. |
-| Evolução | Metas comerciais, contas a pagar, contas a receber e integração contábil. |
+| Alta | Validação autenticada em operação real dos fluxos de cancelamento, devolução, importação e fidelidade. |
+| Média | Contas a receber, comprovante de venda e recebimento de compras por planilha. |
+| Média | Integração com impressora térmica e equipamentos fiscais quando necessário. |
+| Evolução | Integração contábil e relatórios financeiros gerenciais. |
 
 ## Evolução operacional priorizada
 

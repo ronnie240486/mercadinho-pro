@@ -1,4 +1,5 @@
-import { listLoyaltyBalances, listSalesGoals } from "../db";
+import { z } from "zod";
+import { adjustCustomerLoyalty, createSalesGoal, listLoyaltyBalances, listLoyaltyTransactions, listSalesGoals } from "../db";
 import { router } from "../_core/trpc";
 import { managementProcedure } from "./_permissions";
-export const loyaltyRouter = router({ balances: managementProcedure.query(() => listLoyaltyBalances()), goals: managementProcedure.query(() => listSalesGoals()) });
+export const loyaltyRouter = router({ balances: managementProcedure.query(() => listLoyaltyBalances()), transactions: managementProcedure.input(z.object({ customerId: z.number().int().positive().optional() }).optional()).query(({ input }) => listLoyaltyTransactions(input?.customerId)), adjust: managementProcedure.input(z.object({ customerId: z.number().int().positive(), points: z.coerce.number().int().optional(), creditAmount: z.coerce.number().multipleOf(0.01).optional(), description: z.string().trim().min(3).max(255) })).mutation(({ ctx, input }) => adjustCustomerLoyalty({ ...input, userId: ctx.user.id })), goals: managementProcedure.query(() => listSalesGoals()), createGoal: managementProcedure.input(z.object({ name: z.string().trim().min(2).max(120), startsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), endsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), targetAmount: z.coerce.number().positive() })).mutation(({ input }) => createSalesGoal(input)) });

@@ -1,0 +1,1 @@
+ALTER TABLE `cashMovements` MODIFY COLUMN `type` enum('sale','supply','withdrawal','adjustment','cancellation','return') NOT NULL;
