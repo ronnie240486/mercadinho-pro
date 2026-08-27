@@ -6,6 +6,8 @@ import DashboardLayout from "./components/DashboardLayout";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Cash from "./pages/Cash";
 import AccountsPayable from "./pages/AccountsPayable";
+import Alerts from "./pages/Alerts";
+import Utilities from "./pages/Utilities";
 import Home from "./pages/Home";
 import Inventory from "./pages/Inventory";
 import NotFound from "./pages/NotFound";
@@ -32,6 +34,8 @@ function Router() {
         <Route path="/validade" component={ShelfLife} />
         <Route path="/caixa" component={Cash} />
         <Route path="/contas-a-pagar" component={AccountsPayable} />
+        <Route path="/alertas" component={Alerts} />
+        <Route path="/ferramentas" component={Utilities} />
         <Route path="/cadastros" component={Registrations} />
         <Route path="/relatorios" component={Reports} />
         <Route path="/404" component={NotFound} />
