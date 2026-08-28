@@ -25,6 +25,7 @@ O **Mercadinho Pro** é um sistema web responsivo para organizar a rotina comerc
 | Relatórios | Vendas, ticket médio, produtos mais vendidos, desempenho por categoria, margem, estoque em atenção, movimentações de caixa com devoluções destacadas como saída e exportação em CSV. |
 | Prevenção de perdas | Radar operacional com estoque crítico, lotes próximos do vencimento, perdas, divergências de inventário, devoluções e cancelamentos recentes, com atalhos para as ações correspondentes. |
 | Operação conectada | Central universal por estação para definir largura de comprovante térmico, preferência de gaveta, modo de balança e telefone de atendimento; cada computador mantém perfil próprio, sem exigir marca ou equipamento previamente instalado. |
+| Backups | Central de proteção por instalação com conexão individual ao Google Drive, autorização OAuth protegida no servidor e histórico de cópias. A rotina automática diária será ativada depois da primeira conexão do mercado. |
 | Pedidos pelo WhatsApp | Pedidos de retirada ou entrega com itens, preço vigente, saldo conferido e pagamento por dinheiro, Pix ou cartão; o pedido não baixa estoque nem registra caixa até ser atendido no PDV. |
 
 ## Identidade e visualização

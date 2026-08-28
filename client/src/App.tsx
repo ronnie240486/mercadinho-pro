@@ -26,6 +26,7 @@ import SalesGoals from "./pages/SalesGoals";
 import LossPrevention from "./pages/LossPrevention";
 import OperationSetup from "./pages/OperationSetup";
 import WhatsAppOrders from "./pages/WhatsAppOrders";
+import Backups from "./pages/Backups";
 import "./brand.css";
 import "./dark.css";
 
@@ -49,6 +50,7 @@ function Router() {
         <Route path="/prevencao-perdas" component={LossPrevention} />
         <Route path="/operacao-conectada" component={OperationSetup} />
         <Route path="/pedidos-whatsapp" component={WhatsAppOrders} />
+        <Route path="/backups" component={Backups} />
         <Route path="/ferramentas" component={Utilities} />
         <Route path="/fidelidade" component={Loyalty} />
         <Route path="/metas" component={SalesGoals} />

@@ -152,3 +152,21 @@
 - [x] Cobrir em testes a alteração e a leitura do perfil ativo entre estações locais.
 - [x] Usar a estação ativa também ao carregar o número de WhatsApp nos pedidos, mantendo o atendimento separado por instalação.
 - [ ] Validar em sessão autenticada a central de operação com controles e orientações por estação após aplicar o perfil ativo.
+- [x] Definir a plataforma prioritária para o aplicativo de PC instalável do Mercadinho Pro: Windows 7, Windows 10 e Windows 11.
+- [x] Documentar os requisitos de instalação por cliente, incluindo perfil local e compatibilidade de impressora, gaveta e balança.
+- [ ] Preparar o projeto para empacotamento de desktop após confirmar o sistema operacional alvo.
+- [x] Pesquisar e documentar a compatibilidade atual de aplicativo de PC para Windows 7, Windows 10 e Windows 11.
+- [ ] Definir uma estratégia de instalador que mantenha operação viável nos clientes com Windows 7 e suporte atual nos demais.
+- [ ] Mapear o banco de dados atual, os arquivos e as opções de cópia de segurança local e em nuvem.
+- [ ] Definir uma rotina de backup com cópias separadas e períodos de retenção, sem depender de um único computador.
+- [ ] Documentar o processo de restauração e a validação periódica das cópias de segurança.
+- [ ] Solicitar a escolha do destino de nuvem e as permissões necessárias antes de ativar qualquer sincronização automática.
+- [x] Criar uma central de backup com botão de conexão individual ao Google Drive para cada cliente.
+- [x] Armazenar de forma segura a autorização, a pasta de destino e o histórico de cópias sem misturar dados entre clientes.
+- [ ] Gerar cópia diária idempotente do banco e arquivos do cliente após autorização explícita, sem apagar cópias existentes.
+- [ ] Oferecer cópia manual baixável no PC e registrar data, tamanho e resultado das cópias automáticas.
+- [ ] Implementar restauração orientada, retenção configurável e testes de isolamento dos backups por cliente.
+- [x] Documentar que cada mercado cliente receberá uma instalação, um banco e uma configuração de backup separados.
+- [x] Preparar um roteiro de provisionamento seguro de nova instalação, sem reutilizar dados ou tokens de outro mercado.
+- [ ] Garantir que o backup diário no Google Drive seja ativado somente na instalação individual do mercado que autorizou a conexão.
+- [ ] Validar em computador Windows 7 real a instalação legada com WebView2 antes de prometer compatibilidade de produção nesse sistema.

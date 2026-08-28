@@ -177,6 +177,43 @@ export const whatsappOrderItems = mysqlTable(
   table => [index("whatsapp_order_items_order_idx").on(table.whatsappOrderId), index("whatsapp_order_items_product_idx").on(table.productId)],
 );
 
+export const googleDriveBackupConnections = mysqlTable(
+  "googleDriveBackupConnections",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
+    encryptedRefreshToken: text("encryptedRefreshToken").notNull(),
+    googleEmail: varchar("googleEmail", { length: 320 }),
+    folderId: varchar("folderId", { length: 160 }),
+    folderName: varchar("folderName", { length: 180 }).default("Mercadinho Pro - Backups").notNull(),
+    status: mysqlEnum("status", ["active", "revoked", "error"]).default("active").notNull(),
+    lastBackupAt: timestamp("lastBackupAt"),
+    lastBackupStatus: mysqlEnum("lastBackupStatus", ["success", "failed"]),
+    lastBackupError: text("lastBackupError"),
+    scheduleCronTaskUid: varchar("scheduleCronTaskUid", { length: 65 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [index("google_drive_backup_status_idx").on(table.status)],
+);
+
+export const googleDriveBackupRuns = mysqlTable(
+  "googleDriveBackupRuns",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    connectionId: int("connectionId").notNull().references(() => googleDriveBackupConnections.id, { onDelete: "cascade" }),
+    userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+    trigger: mysqlEnum("trigger", ["manual", "daily"]).notNull(),
+    status: mysqlEnum("status", ["success", "failed"]).notNull(),
+    fileName: varchar("fileName", { length: 255 }),
+    googleFileId: varchar("googleFileId", { length: 160 }),
+    sizeBytes: int("sizeBytes"),
+    errorMessage: text("errorMessage"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [index("google_drive_backup_runs_connection_idx").on(table.connectionId), index("google_drive_backup_runs_created_idx").on(table.createdAt)],
+);
+
 export const productBatches = mysqlTable(
   "productBatches",
   {

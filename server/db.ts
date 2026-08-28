@@ -2,6 +2,8 @@ import { and, desc, eq, gte, inArray, like, lte, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   accountsPayable,
+  googleDriveBackupConnections,
+  googleDriveBackupRuns,
   loyaltyTransactions,
   salesGoals,
   cashMovements,
@@ -1183,4 +1185,57 @@ export async function createSalesGoal(input: { name: string; startsOn: string; e
 export async function listLoyaltyBalances() {
   const db = await requireDb();
   return db.select({ customerId: customers.id, name: customers.name, loyaltyMode: customers.loyaltyMode, pointsBalance: customers.loyaltyPointsBalance, creditBalance: customers.loyaltyCreditBalance }).from(customers).where(eq(customers.active, true)).orderBy(customers.name).limit(100);
+}
+
+export async function getGoogleDriveBackupConnection(userId: number) {
+  const db = await requireDb();
+  const [connection] = await db
+    .select()
+    .from(googleDriveBackupConnections)
+    .where(eq(googleDriveBackupConnections.userId, userId))
+    .limit(1);
+  return connection ?? null;
+}
+
+export async function upsertGoogleDriveBackupConnection(input: {
+  userId: number;
+  encryptedRefreshToken: string;
+  googleEmail?: string | null;
+  folderId?: string | null;
+  folderName?: string;
+}) {
+  const db = await requireDb();
+  const existing = await getGoogleDriveBackupConnection(input.userId);
+  const payload = {
+    encryptedRefreshToken: input.encryptedRefreshToken,
+    googleEmail: input.googleEmail ?? null,
+    folderId: input.folderId ?? null,
+    folderName: input.folderName ?? "Mercadinho Pro - Backups",
+    status: "active" as const,
+    lastBackupError: null,
+  };
+  if (existing) {
+    await db.update(googleDriveBackupConnections).set(payload).where(eq(googleDriveBackupConnections.id, existing.id));
+  } else {
+    await db.insert(googleDriveBackupConnections).values({ userId: input.userId, ...payload });
+  }
+  return getGoogleDriveBackupConnection(input.userId);
+}
+
+export async function listGoogleDriveBackupRuns(userId: number) {
+  const db = await requireDb();
+  return db
+    .select({
+      id: googleDriveBackupRuns.id,
+      trigger: googleDriveBackupRuns.trigger,
+      status: googleDriveBackupRuns.status,
+      fileName: googleDriveBackupRuns.fileName,
+      sizeBytes: googleDriveBackupRuns.sizeBytes,
+      errorMessage: googleDriveBackupRuns.errorMessage,
+      createdAt: googleDriveBackupRuns.createdAt,
+    })
+    .from(googleDriveBackupRuns)
+    .where(eq(googleDriveBackupRuns.userId, userId))
+    .orderBy(desc(googleDriveBackupRuns.createdAt))
+    .limit(20);
 }
