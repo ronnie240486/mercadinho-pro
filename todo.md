@@ -99,3 +99,8 @@
 - [x] Explicar as colunas, unidades e regras do modelo CSV diretamente na área de ferramentas.
 - [ ] Validar o download e a leitura do modelo CSV de cadastro inicial.
 - [ ] Validar que o botão Baixar modelo gera o arquivo `modelo-cadastro-produtos-mercadinho-pro.csv` com o cabeçalho correto.
+- [x] Exibir um checklist de início no painel quando a loja ainda não tiver produtos cadastrados.
+- [x] Oferecer atalhos do checklist para cadastrar produtos, registrar estoque e abrir o caixa inicial.
+- [ ] Validar e documentar o checklist de início em computador e celular.
+- [ ] Validar em sessão autenticada o checklist de início com loja sem produtos em desktop e celular, registrando evidência visual.
+- [x] Confirmar no README a documentação do checklist de início após atualização.

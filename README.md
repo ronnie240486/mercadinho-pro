@@ -7,6 +7,7 @@ O **Mercadinho Pro** é um sistema web responsivo para organizar a rotina comerc
 | Módulo | Recursos implementados |
 |---|---|
 | Visão geral | Indicadores do dia, status de caixa, alertas de estoque e linha do tempo de atividades. |
+| Início guiado | Checklist automático para lojas sem produtos, orientando cadastro, entrada de estoque e abertura de caixa até o primeiro atendimento. |
 | Produtos | Cadastro, consulta, busca, edição e exportação de produtos com códigos, categoria, preços, estoque mínimo e unidades comerciais padronizadas ou personalizadas. |
 | PDV | Busca por nome, código interno ou barras, carrinho, desconto, cliente e pagamentos por dinheiro, cartão ou PIX; leitura por leitor USB/Bluetooth e por câmera em navegadores compatíveis; uso de pontos ou crédito de fidelidade. |
 | Estoque | Entradas, saídas operacionais, ajustes, devoluções, perdas, histórico e alertas de saldo mínimo. |
