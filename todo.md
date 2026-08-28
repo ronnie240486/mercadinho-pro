@@ -68,7 +68,8 @@
 - [ ] Validar o cadastro de produtos com as novas unidades em computador e celular.
 - [ ] Registrar evidência visual autenticada do seletor de unidades e do campo de sigla personalizada em desktop e celular.
 - [x] Tratar vendas históricas sem alocação de lote, bloqueando cancelamentos e devoluções que não possam recompor os lotes com segurança.
-- [ ] Adicionar testes para vendas sem alocação de lote e validar o fluxo autenticado de cancelamento e devolução.
+- [x] Adicionar testes para cancelamento e devolução de vendas sem alocação de lote, bloqueando o estorno histórico rastreado.
+- [ ] Validar o fluxo autenticado de cancelamento e devolução de vendas sem alocação de lote.
 - [ ] Validar em sessão autenticada os fluxos de cancelamento e devolução na central de vendas, incluindo o bloqueio de vendas históricas sem alocação de lote, e registrar evidência.
 - [x] Adicionar estado vazio orientativo à central de contas a pagar quando não houver compromissos cadastrados.
 - [ ] Validar em sessão autenticada o modal de cadastro de produtos em desktop, abrindo o seletor de unidades e registrando evidência visual.

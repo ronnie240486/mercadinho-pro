@@ -14,7 +14,7 @@ function queryResult(result: unknown) {
   return { from: () => chain };
 }
 
-function createDatabase() {
+function createDatabase(options: { historicalBatchTrace?: boolean } = {}) {
   const inserts: Array<{ table: unknown; values: unknown }> = [];
   const updates: Array<{ table: unknown; values: unknown }> = [];
   const databaseSelections = [
@@ -23,6 +23,7 @@ function createDatabase() {
     [],
     [{ id: 51, saleId: 10, productId: 1, productName: "Arroz", quantity: "4.000", totalAmount: "20.00" }],
     [],
+    ...(options.historicalBatchTrace ? [[{ id: 401 }]] : []),
   ];
   const transactionSelections = [
     [{ id: 99 }],
@@ -56,5 +57,12 @@ describe("devolução parcial de venda", () => {
     expect(database.inserts.some(entry => (entry.values as { amount?: string }).amount === "4.50")).toBe(true);
     const cashEntry = database.inserts.at(-1)?.values as { type: string; paymentMethod: string; amount: string };
     expect(cashEntry).toEqual(expect.objectContaining({ type: "return", paymentMethod: "cash", amount: "4.50" }));
+  });
+
+  it("bloqueia devolução de venda histórica rastreada por lote sem alocações registradas", async () => {
+    const database = createDatabase({ historicalBatchTrace: true });
+    setDbForTests(database as never);
+
+    await expect(createSaleReturn({ saleId: 10, userId: 7, reason: "Produto avariado", refundMethod: "cash", items: [{ saleItemId: 51, quantity: 1 }] })).rejects.toThrow("distribuição de lotes");
   });
 });
