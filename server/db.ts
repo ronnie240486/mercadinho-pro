@@ -1239,3 +1239,73 @@ export async function listGoogleDriveBackupRuns(userId: number) {
     .orderBy(desc(googleDriveBackupRuns.createdAt))
     .limit(20);
 }
+
+export async function getGoogleDriveBackupConnectionBySchedule(taskUid: string) {
+  const db = await requireDb();
+  const [connection] = await db
+    .select()
+    .from(googleDriveBackupConnections)
+    .where(eq(googleDriveBackupConnections.scheduleCronTaskUid, taskUid))
+    .limit(1);
+  return connection ?? null;
+}
+
+export async function setGoogleDriveBackupSchedule(userId: number, taskUid: string) {
+  const db = await requireDb();
+  await db
+    .update(googleDriveBackupConnections)
+    .set({ scheduleCronTaskUid: taskUid })
+    .where(eq(googleDriveBackupConnections.userId, userId));
+}
+
+export async function recordGoogleDriveBackupRun(input: {
+  connectionId: number;
+  userId: number;
+  trigger: "manual" | "daily";
+  status: "success" | "failed";
+  fileName?: string | null;
+  googleFileId?: string | null;
+  sizeBytes?: number | null;
+  errorMessage?: string | null;
+}) {
+  const db = await requireDb();
+  await db.insert(googleDriveBackupRuns).values({
+    connectionId: input.connectionId,
+    userId: input.userId,
+    trigger: input.trigger,
+    status: input.status,
+    fileName: input.fileName ?? null,
+    googleFileId: input.googleFileId ?? null,
+    sizeBytes: input.sizeBytes ?? null,
+    errorMessage: input.errorMessage ?? null,
+  });
+}
+
+export async function updateGoogleDriveBackupResult(input: {
+  connectionId: number;
+  status: "active" | "error" | "revoked";
+  lastBackupStatus: "success" | "failed";
+  lastBackupError?: string | null;
+  successfulAt?: Date;
+}) {
+  const db = await requireDb();
+  await db
+    .update(googleDriveBackupConnections)
+    .set({
+      status: input.status,
+      lastBackupAt: input.successfulAt,
+      lastBackupStatus: input.lastBackupStatus,
+      lastBackupError: input.lastBackupError ?? null,
+    })
+    .where(eq(googleDriveBackupConnections.id, input.connectionId));
+}
+
+export async function hasGoogleDriveBackupSince(connectionId: number, since: Date) {
+  const db = await requireDb();
+  const [run] = await db
+    .select({ id: googleDriveBackupRuns.id })
+    .from(googleDriveBackupRuns)
+    .where(and(eq(googleDriveBackupRuns.connectionId, connectionId), eq(googleDriveBackupRuns.trigger, "daily"), eq(googleDriveBackupRuns.status, "success"), gte(googleDriveBackupRuns.createdAt, since)))
+    .limit(1);
+  return Boolean(run);
+}

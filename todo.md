@@ -163,10 +163,13 @@
 - [ ] Solicitar a escolha do destino de nuvem e as permissões necessárias antes de ativar qualquer sincronização automática.
 - [x] Criar uma central de backup com botão de conexão individual ao Google Drive para cada cliente.
 - [x] Armazenar de forma segura a autorização, a pasta de destino e o histórico de cópias sem misturar dados entre clientes.
-- [ ] Gerar cópia diária idempotente do banco e arquivos do cliente após autorização explícita, sem apagar cópias existentes.
-- [ ] Oferecer cópia manual baixável no PC e registrar data, tamanho e resultado das cópias automáticas.
+- [x] Gerar cópia diária idempotente do banco e arquivos do cliente após autorização explícita, sem apagar cópias existentes.
+- [x] Oferecer cópia manual baixável no PC e registrar data, tamanho e resultado das cópias automáticas.
 - [ ] Implementar restauração orientada, retenção configurável e testes de isolamento dos backups por cliente.
 - [x] Documentar que cada mercado cliente receberá uma instalação, um banco e uma configuração de backup separados.
 - [x] Preparar um roteiro de provisionamento seguro de nova instalação, sem reutilizar dados ou tokens de outro mercado.
-- [ ] Garantir que o backup diário no Google Drive seja ativado somente na instalação individual do mercado que autorizou a conexão.
+- [x] Garantir que o backup diário no Google Drive seja ativado somente na instalação individual do mercado que autorizou a conexão.
+- [ ] Validar em sessão autenticada a conexão real com Google Drive, a criação da pasta e a primeira cópia diária deste mercado.
+- [ ] Validar o download da cópia manual no PC e a abertura do arquivo compactado de backup.
+- [ ] Confirmar no histórico o comportamento idempotente da rotina diária após uma execução real no Google Drive.
 - [ ] Validar em computador Windows 7 real a instalação legada com WebView2 antes de prometer compatibilidade de produção nesse sistema.

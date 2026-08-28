@@ -1,9 +1,11 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 import { parse as parseCookieHeader } from "cookie";
 import type { Express, Request, Response } from "express";
+import { COOKIE_NAME } from "@shared/const";
 import * as db from "./db";
 import { hasOperationalPermission } from "./businessUtils";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { createHeartbeatJob } from "./_core/heartbeat";
 import { sdk } from "./_core/sdk";
 
 const STATE_COOKIE = "google_drive_backup_state";
@@ -111,13 +113,24 @@ export function registerGoogleDriveBackupOAuthRoutes(app: Express) {
       const folderId = typeof folder.id === "string" ? folder.id : null;
       if (!folderId) throw new Error("O Google Drive não confirmou a pasta de backup.");
 
-      await db.upsertGoogleDriveBackupConnection({
+      const connection = await db.upsertGoogleDriveBackupConnection({
         userId: user.id,
         encryptedRefreshToken: encryptGoogleRefreshToken(refreshToken),
         googleEmail: typeof userInfo.email === "string" ? userInfo.email : null,
         folderId,
         folderName: BACKUP_FOLDER_NAME,
       });
+      const sessionToken = parseCookieHeader(req.headers.cookie ?? "")[COOKIE_NAME] ?? "";
+      if (!connection?.scheduleCronTaskUid && !sessionToken) throw new Error("A sessão expirou antes de ativar o backup diário.");
+      if (!connection?.scheduleCronTaskUid) {
+        const job = await createHeartbeatJob({
+          name: `google-drive-backup-${user.id}`,
+          cron: "0 0 5 * * *",
+          path: "/api/scheduled/google-drive-backup",
+          description: "Cópia diária do Mercadinho Pro no Google Drive desta instalação.",
+        }, sessionToken);
+        await db.setGoogleDriveBackupSchedule(user.id, job.taskUid);
+      }
       res.redirect(302, "/backups?googleDrive=connected");
     } catch {
       res.redirect(302, "/backups?googleDrive=error");

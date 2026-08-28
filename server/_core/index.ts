@@ -9,6 +9,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { registerGoogleDriveBackupOAuthRoutes } from "../googleDriveBackupOAuth";
+import { downloadManualBackup, runScheduledGoogleDriveBackup } from "../googleDriveBackups";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -38,6 +39,8 @@ async function startServer() {
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   registerGoogleDriveBackupOAuthRoutes(app);
+  app.get("/api/backups/download", downloadManualBackup);
+  app.post("/api/scheduled/google-drive-backup", runScheduledGoogleDriveBackup);
   // tRPC API
   app.use(
     "/api/trpc",

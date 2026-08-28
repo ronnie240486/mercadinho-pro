@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Cloud, FileClock, HardDriveDownload, LockKeyhole, RefreshCw, ShieldCheck } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 function formatDate(value: Date | string | null | undefined) {
   if (!value) return "Ainda não realizado";
@@ -10,8 +11,16 @@ function formatDate(value: Date | string | null | undefined) {
 }
 
 export default function Backups() {
+  const utils = trpc.useUtils();
   const { data, isLoading } = trpc.backups.status.useQuery();
   const connected = data?.connection?.status === "active";
+  const runNow = trpc.backups.runNow.useMutation({
+    onSuccess: result => {
+      toast.success(result.skipped ? "A cópia diária de hoje já foi concluída." : "Cópia enviada ao Google Drive.");
+      utils.backups.status.invalidate();
+    },
+    onError: error => toast.error(error.message || "Não foi possível enviar a cópia."),
+  });
 
   return (
     <main className="mx-auto max-w-6xl space-y-6 px-4 py-7 sm:px-6 lg:px-8">
@@ -41,6 +50,10 @@ export default function Backups() {
             <Button className="h-11 w-full bg-[#d99d08] text-[#101820] hover:bg-[#edbc35] sm:w-auto" onClick={() => { window.location.assign("/api/google-drive/connect"); }}>
               <Cloud className="mr-2 h-4 w-4" />{connected ? "Trocar conta Google" : "Conectar Google Drive para backup"}
             </Button>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              {connected ? <Button variant="outline" className="h-10" disabled={runNow.isPending} onClick={() => runNow.mutate()}><RefreshCw className="mr-2 h-4 w-4" />{runNow.isPending ? "Enviando cópia…" : "Fazer cópia agora"}</Button> : null}
+              <Button variant="outline" className="h-10" onClick={() => { window.location.assign("/api/backups/download"); }}><HardDriveDownload className="mr-2 h-4 w-4" />Baixar cópia para PC</Button>
+            </div>
           </CardContent>
         </Card>
 

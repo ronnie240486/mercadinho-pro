@@ -1,6 +1,7 @@
 import * as db from "../db";
 import { managementProcedure } from "./_permissions";
 import { router } from "../_core/trpc";
+import { runGoogleDriveBackup } from "../googleDriveBackups";
 
 export const backupsRouter = router({
   status: managementProcedure.query(async ({ ctx }) => {
@@ -23,4 +24,5 @@ export const backupsRouter = router({
       runs,
     };
   }),
+  runNow: managementProcedure.mutation(async ({ ctx }) => runGoogleDriveBackup(ctx.user.id, "manual")),
 });
