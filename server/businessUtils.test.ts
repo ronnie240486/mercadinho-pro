@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { allocateBatchConsumption, allocateBatchRestoration, applyStockMovement, calculateCashBalance, calculateLoyaltyRedemption, calculateSaleTotals, formatBatchConsumption, hasOperationalPermission, normalizeBarcodeCode, requireBatchCoverage, resolveAccountPayableStatus } from "./businessUtils";
+import { allocateBatchConsumption, allocateBatchRestoration, applyStockMovement, calculateCashBalance, calculateLoyaltyRedemption, calculateSaleTotals, calculateSuggestedReplenishment, formatBatchConsumption, hasOperationalPermission, normalizeBarcodeCode, requireBatchCoverage, resolveAccountPayableStatus } from "./businessUtils";
 
 describe("regras comerciais", () => {
   it("calcula subtotal, desconto e total de uma venda", () => {
@@ -42,9 +42,18 @@ describe("regras comerciais", () => {
     expect(resolveAccountPayableStatus("paid", "2026-08-01", "2026-08-27")).toBe("paid");
   });
 
+  it("sugere reposição para recuperar duas vezes o estoque mínimo", () => {
+    expect(calculateSuggestedReplenishment(3, 3)).toBe(3);
+    expect(calculateSuggestedReplenishment(0, 3)).toBe(6);
+    expect(() => calculateSuggestedReplenishment(2, 0)).toThrow("reposição");
+  });
+
   it("reconhece os papéis autorizados para a operação", () => {
     expect(hasOperationalPermission("stockist", ["admin", "stockist"])).toBe(true);
     expect(hasOperationalPermission("operator", ["admin", "stockist"])).toBe(false);
+    expect(hasOperationalPermission("manager", ["admin", "manager"])).toBe(true);
+    expect(hasOperationalPermission("admin", ["admin", "manager"])).toBe(true);
+    expect(hasOperationalPermission("operator", ["admin", "manager"])).toBe(false);
   });
 
   it("normaliza espaços inseridos na leitura do código de barras", () => {

@@ -75,4 +75,16 @@
 - [ ] Validar em sessão autenticada o modal de cadastro de produtos em celular, abrindo o seletor de unidades e registrando evidência visual.
 - [ ] Registrar evidência visual autenticada do campo de sigla personalizada em desktop e celular, incluindo a troca para a opção personalizada e o campo preenchível.
 - [x] Confirmar em sessão autenticada no celular a opção Outra sigla e o campo de sigla personalizada preenchível.
+- [x] Validar em sessão autenticada o modal de cadastro de produtos em celular, abrindo o seletor de unidades e registrando evidência visual.
 - [x] Elaborar um roteiro priorizado das próximas funcionalidades para ampliar a gestão do mercadinho, mantendo a emissão fiscal adiada.
+- [x] Excluir crediário, vendas a prazo e contas a receber do escopo comercial; aceitar somente dinheiro, Pix e cartão.
+- [x] Abrir automaticamente um modal de estoque crítico na tela principal quando produtos atingirem o mínimo configurado.
+- [x] Exibir no modal de estoque crítico o produto, estoque atual, mínimo configurado e quantidade sugerida para reposição.
+- [x] Permitir navegar do modal de estoque crítico para a tela de estoque ou produtos sem iniciar uma compra automaticamente.
+- [ ] Validar o alerta automático de estoque crítico em computador e celular.
+- [x] Restringir sangrias, ajustes de caixa, cancelamentos e devoluções a gerente ou administrador.
+- [x] Informar no PDV e nas telas operacionais que operadores não podem executar operações sensíveis.
+- [x] Adicionar no PDV uma indicação visível de que sangria, cancelamento e devolução exigem gerente ou administrador.
+- [ ] Validar visualmente o bloqueio ou a mensagem de operador nas telas de Caixa, Vendas e PDV.
+- [ ] Validar e documentar as permissões de gerente e administrador para operações sensíveis.
+- [x] Confirmar a rota correta do histórico de vendas como `/vendas`; a tela 404 ocorreu apenas na URL inválida usada na validação visual.

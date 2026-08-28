@@ -6,7 +6,6 @@ O Mercadinho Pro já cobre o núcleo operacional: produtos, estoque, compras, lo
 
 | Prioridade | Recurso | Impacto prático | Situação sugerida |
 |---|---|---|---|
-| 1 | **Contas a receber e crediário** | Registra vendas a prazo, parcelas, vencimentos, recebimentos e clientes em atraso. | Próximo módulo financeiro. |
 | 1 | **Compra sugerida e reposição inteligente** | Calcula sugestão por estoque mínimo/máximo, giro, vendas recentes, validade e prazo do fornecedor. | Próximo módulo de estoque. |
 | 1 | **Fechamento por operador e permissões de aprovação** | Cada operador abre/fecha o próprio turno; desconto, sangria, cancelamento e devolução acima de limite exigem aprovação de gerente. | Próximo módulo de segurança. |
 | 1 | **Painel de perdas e prevenção de fraude** | Destaca divergências de inventário, descontos fora do padrão, cancelamentos/devoluções repetidos e quebras por motivo. | Próximo módulo analítico. |
@@ -20,9 +19,9 @@ O Mercadinho Pro já cobre o núcleo operacional: produtos, estoque, compras, lo
 
 ## Ordem prática recomendada
 
-### 1. Financeiro e controle de equipe
+### 1. Compra sugerida e controle de equipe
 
-O primeiro bloco deve criar **contas a receber/crediário**, recebimentos parciais, limite por cliente, envelhecimento de dívida e um fechamento de caixa separado por operador. Em seguida, devem ser configuradas regras de aprovação: somente gerente pode liberar descontos elevados, cancelar venda, registrar devolução ou autorizar sangria acima de um valor configurável. Isso reduz erro operacional e dá rastreabilidade a operações sensíveis.
+O primeiro bloco deve criar uma **lista de compra sugerida** com base em estoque mínimo/máximo, giro, vendas recentes, validade e fornecedor preferencial. Em seguida, devem ser configuradas regras de aprovação: somente gerente pode liberar descontos elevados, cancelar venda, registrar devolução ou autorizar sangria acima de um valor configurável. Isso reduz erro operacional e dá rastreabilidade a operações sensíveis.
 
 ### 2. Compra sugerida e prevenção de perdas
 
@@ -38,9 +37,11 @@ Com estoque e preços confiáveis, o Mercadinho Pro pode ter um módulo de pedid
 
 ## Recursos que **não** priorizaria agora
 
-Não recomendo começar por inteligência artificial avançada, marketplace próprio, múltiplas filiais ou integrações extensas de equipamentos antes de estabilizar **financeiro, reposição, prevenção de perdas e operação por operador**. Esses recursos geram mais valor quando o cadastro, o estoque e os fluxos diários já produzem dados confiáveis.
+Não recomendo começar por inteligência artificial avançada, marketplace próprio, múltiplas filiais ou integrações extensas de equipamentos antes de estabilizar **reposição, prevenção de perdas e operação por operador**. Esses recursos geram mais valor quando o cadastro, o estoque e os fluxos diários já produzem dados confiáveis.
 
 > **Emissão fiscal permanece fora deste roteiro**, conforme a decisão atual. Ela só deve ser retomada quando houver definição do provedor, do regime fiscal e da operação desejada.
+
+> **Crediário, vendas a prazo e contas a receber também ficam fora do escopo.** O PDV continuará aceitando somente dinheiro, Pix e cartão.
 
 ## Referências
 

@@ -14,9 +14,9 @@ O **Mercadinho Pro** é um sistema web responsivo para organizar a rotina comerc
 | Inventário | Contagem por leitor de código de barras, ajuste auditável e histórico de divergências. |
 | Validade e perdas | Lotes, validade, alertas de vencimento e baixa rastreável por avaria, vencimento ou descarte. |
 | Preços e promoções | Histórico de alterações, ofertas com período de vigência e aplicação automática do preço promocional no PDV. |
-| Caixa | Abertura, suprimento, sangria, acompanhamento de saldo físico e fechamento com conferência de diferença. |
+| Caixa | Abertura, suprimento, acompanhamento de saldo físico e fechamento com conferência de diferença; sangria, ajustes e fechamento são restritos a gerente ou administrador. |
 | Cadastros | Fornecedores, clientes, categorias e administração de usuários, com escolha individual entre fidelidade por pontos ou crédito/desconto. |
-| Vendas e devoluções | Histórico de vendas, cancelamento no caixa original, devolução parcial ou total, estorno financeiro e recomposição auditável de estoque e lotes. |
+| Vendas e devoluções | Histórico de vendas, cancelamento no caixa original, devolução parcial ou total, estorno financeiro e recomposição auditável de estoque e lotes; cancelamento e devolução são restritos a gerente ou administrador. |
 | Ferramentas | Importação transacional de catálogo por CSV com prévia e validação, além de etiquetas A4 com preço e código de barras selecionáveis. |
 | Metas | Criação de objetivos por período, acompanhamento de realizado, percentual e valor restante. |
 | Fidelidade | Saldos e extrato por cliente, ajustes auditáveis e uso de pontos ou crédito no PDV. |
@@ -30,9 +30,9 @@ O sistema usa o logotipo oficial fornecido para o Mercadinho Pro, presente na en
 
 | Papel | Escopo de acesso |
 |---|---|
-| Administrador | Acesso integral, inclusive gestão de usuários e permissões. |
-| Gerente | Gestão operacional, relatórios e fechamento de caixa. |
-| Operador | PDV, consulta de produtos, clientes e operações de caixa autorizadas. |
+| Administrador | Acesso integral, inclusive gestão de usuários, sangrias, ajustes, fechamento de caixa, cancelamentos e devoluções. |
+| Gerente | Gestão operacional, relatórios, sangrias, ajustes, fechamento de caixa, cancelamentos e devoluções. |
+| Operador | PDV, consulta de produtos, clientes, abertura de caixa e suprimento; não executa operações sensíveis. |
 | Estoquista | Produtos, fornecedores, compras e movimentações de estoque. |
 
 > **Regra de integridade:** uma venda concluída registra os itens, os pagamentos, a movimentação de caixa e a baixa do estoque. Compras e ajustes registram a origem da alteração e o saldo anterior e posterior do produto.
@@ -42,8 +42,8 @@ O sistema usa o logotipo oficial fornecido para o Mercadinho Pro, presente na en
 | Prioridade | Incremento |
 |---|---|
 | Alta | Validação autenticada em operação real dos fluxos de cancelamento, devolução, importação e fidelidade. |
-| Média | Contas a receber, comprovante de venda e recebimento de compras por planilha. |
-| Média | Integração com impressora térmica e equipamentos fiscais quando necessário. |
+| Média | Comprovante de venda, compra sugerida e recebimento de compras por planilha. |
+| Média | Integração com impressora térmica e equipamentos de operação quando necessário. |
 | Evolução | Integração contábil e relatórios financeiros gerenciais. |
 
 ## Evolução operacional priorizada
@@ -58,3 +58,5 @@ O sistema usa o logotipo oficial fornecido para o Mercadinho Pro, presente na en
 | 6 | Contas a pagar e despesas operacionais | Conecta a margem de venda à visão real do caixa da loja. |
 
 > **Emissão fiscal:** a integração com NFC-e foi deliberadamente adiada. O sistema está preparado para continuar a operação interna, e a emissão só deve ser configurada em uma etapa futura, após validação fiscal e contratação do provedor escolhido.
+
+> **Formas de pagamento:** o Mercadinho Pro não terá crediário, vendas a prazo ou contas a receber. As vendas serão registradas somente por dinheiro, Pix e cartão.

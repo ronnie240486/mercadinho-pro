@@ -122,3 +122,10 @@ export function calculateCashBalance(
 export function resolveAccountPayableStatus(status: "open" | "paid" | "overdue" | "cancelled", dueDate: string, today: string) {
   return status === "open" && dueDate < today ? "overdue" : status;
 }
+
+export function calculateSuggestedReplenishment(stockQuantity: number, minimumStock: number) {
+  if (!Number.isFinite(stockQuantity) || !Number.isFinite(minimumStock) || stockQuantity < 0 || minimumStock <= 0) {
+    throw new Error("Os níveis de estoque para reposição são inválidos.");
+  }
+  return Math.max(minimumStock * 2 - stockQuantity, minimumStock - stockQuantity, 1);
+}

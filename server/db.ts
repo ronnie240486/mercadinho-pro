@@ -26,7 +26,7 @@ import {
   type InsertUser,
   users,
 } from "../drizzle/schema";
-import { allocateBatchRestoration, applyStockMovement, calculateCashBalance, calculateLoyaltyRedemption, calculateSaleTotals, formatBatchConsumption, normalizeBarcodeCode, requireBatchCoverage, resolveAccountPayableStatus, type PaymentMethod } from "./businessUtils";
+import { allocateBatchRestoration, applyStockMovement, calculateCashBalance, calculateLoyaltyRedemption, calculateSaleTotals, calculateSuggestedReplenishment, formatBatchConsumption, normalizeBarcodeCode, requireBatchCoverage, resolveAccountPayableStatus, type PaymentMethod } from "./businessUtils";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -203,6 +203,35 @@ export async function getDashboardSummary() {
     cashStatus: openCash ? "open" : "closed",
     cashBalance: openCash?.expectedBalance ?? 0,
   };
+}
+
+export async function listCriticalStockProducts() {
+  const db = await requireDb();
+  const criticalProducts = await db
+    .select({
+      id: products.id,
+      name: products.name,
+      unit: products.unit,
+      stockQuantity: products.stockQuantity,
+      minimumStock: products.minimumStock,
+      categoryName: categories.name,
+    })
+    .from(products)
+    .leftJoin(categories, eq(products.categoryId, categories.id))
+    .where(and(eq(products.active, true), sql`${products.minimumStock} > 0`, sql`${products.stockQuantity} <= ${products.minimumStock}`))
+    .orderBy(sql`${products.stockQuantity} - ${products.minimumStock}`)
+    .limit(12);
+
+  return criticalProducts.map(product => {
+    const stockQuantity = toNumber(product.stockQuantity);
+    const minimumStock = toNumber(product.minimumStock);
+    return {
+      ...product,
+      stockQuantity,
+      minimumStock,
+      suggestedQuantity: calculateSuggestedReplenishment(stockQuantity, minimumStock),
+    };
+  });
 }
 
 export async function listProducts(search?: string) {
