@@ -642,10 +642,11 @@ export async function createPurchase(input: {
   userId: number;
   supplierId: number;
   notes?: string;
-  items: Array<{ productId: number; quantity: number; unitCost: number }>;
+  items: Array<{ productId: number; quantity: number; unitCost: number; batchCode?: string; expirationDate?: string }>;
 }) {
   const db = await requireDb();
   if (!input.items.length) throw new Error("Inclua ao menos um produto na compra.");
+  if (input.items.some(item => item.expirationDate && !/^\d{4}-\d{2}-\d{2}$/.test(item.expirationDate))) throw new Error("A validade deve estar no formato AAAA-MM-DD.");
   const productIds = Array.from(new Set(input.items.map(item => item.productId)));
   const productRows = await db.select().from(products).where(and(inArray(products.id, productIds), eq(products.active, true)));
   if (productRows.length !== productIds.length) throw new Error("Um ou mais produtos da compra não estão disponíveis.");
@@ -662,9 +663,18 @@ export async function createPurchase(input: {
       if (!product) throw new Error("Produto não encontrado.");
       const previousQuantity = toNumber(product.stockQuantity);
       const currentQuantity = applyStockMovement(previousQuantity, item.quantity);
+      let batchId: number | null = null;
+      const shouldTrackBatch = Boolean(item.batchCode?.trim() || item.expirationDate);
+      if (shouldTrackBatch) {
+        const batchCode = item.batchCode?.trim() || `L-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
+        await tx.insert(productBatches).values({ productId: product.id, purchaseId: purchase.id, supplierId: input.supplierId, code: batchCode, expirationDate: item.expirationDate || null, initialQuantity: decimal(item.quantity, 3), availableQuantity: decimal(item.quantity, 3) });
+        const [batch] = await tx.select({ id: productBatches.id }).from(productBatches).where(and(eq(productBatches.productId, product.id), eq(productBatches.code, batchCode))).orderBy(desc(productBatches.id)).limit(1);
+        if (!batch) throw new Error("Não foi possível registrar o lote recebido.");
+        batchId = batch.id;
+      }
       await tx.insert(purchaseItems).values({ purchaseId: purchase.id, productId: product.id, productName: product.name, quantity: decimal(item.quantity, 3), unitCost: decimal(item.unitCost), totalAmount: decimal(item.quantity * item.unitCost) });
       await tx.update(products).set({ stockQuantity: decimal(currentQuantity, 3), costPrice: decimal(item.unitCost) }).where(eq(products.id, product.id));
-      await tx.insert(stockMovements).values({ productId: product.id, supplierId: input.supplierId, purchaseId: purchase.id, userId: input.userId, type: "entry", quantity: decimal(item.quantity, 3), unitCost: decimal(item.unitCost), previousQuantity: decimal(previousQuantity, 3), currentQuantity: decimal(currentQuantity, 3), reason: `Compra ${purchaseCode}` });
+      await tx.insert(stockMovements).values({ productId: product.id, supplierId: input.supplierId, purchaseId: purchase.id, batchId, userId: input.userId, type: "entry", quantity: decimal(item.quantity, 3), unitCost: decimal(item.unitCost), previousQuantity: decimal(previousQuantity, 3), currentQuantity: decimal(currentQuantity, 3), reason: `Compra ${purchaseCode}${shouldTrackBatch ? ` · Lote ${item.batchCode?.trim() || "gerado"}` : ""}` });
     }
   });
   return { success: true, code: purchaseCode, totalAmount: Math.round(totalAmount * 100) / 100 };

@@ -119,3 +119,9 @@
 - [x] Incluir devoluções no CSV operacional e distinguir seus valores de vendas, suprimentos e sangrias.
 - [x] Criar teste para a sinalização financeira de devolução e validar o relatório responsivo.
 - [ ] Validar em sessão autenticada o relatório de caixa em desktop e celular, confirmando devoluções destacadas como saída financeira.
+- [x] Permitir informar lote e validade opcionais em cada item de uma compra com vários produtos.
+- [x] Criar o lote vinculado à compra, fornecedor e entrada de estoque dentro da mesma transação de recebimento.
+- [x] Validar o formato da validade e manter o recebimento normal quando o item não exigir rastreamento por lote.
+- [x] Adicionar testes automatizados e revisar o formulário de compras em desktop e celular.
+- [ ] Validar em sessão autenticada o formulário de compras em desktop e celular, confirmando os campos opcionais de lote e validade por item.
+- [ ] Registrar evidência visual autenticada do recebimento de compra com lote e validade preenchidos corretamente.
