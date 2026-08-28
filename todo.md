@@ -142,3 +142,9 @@
 - [x] Permitir configurar futuramente o telefone do WhatsApp e montar pedidos com retirada ou entrega e pagamento em dinheiro, Pix ou cartão.
 - [ ] Validar em sessão autenticada um pedido real de retirada ou entrega, com mensagem aberta no WhatsApp e sem baixa automática de estoque ou caixa.
 - [ ] Validar em sessão autenticada a impressão de comprovante após venda real em uma impressora disponível no navegador.
+- [x] Criar um identificador editável de estação para cada instalação do Mercadinho Pro.
+- [x] Manter separadas por instalação as preferências de comprovante, gaveta, balança e WhatsApp, sem depender de marca de equipamento.
+- [x] Exibir orientações claras de que a configuração física será feita individualmente no computador de cada cliente.
+- [ ] Cobrir o isolamento do perfil local com testes e validar a central de operação em desktop e celular.
+- [x] Cobrir em testes automatizados o isolamento dos perfis locais por nome de estação, incluindo WhatsApp e largura de papel.
+- [ ] Validar em sessão autenticada o perfil de estação em desktop e celular, registrando a alternância de preferências entre instalações.
