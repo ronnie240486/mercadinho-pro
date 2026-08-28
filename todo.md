@@ -95,3 +95,7 @@
 - [x] Confirmar que o painel de prevenção de perdas está documentado no README oficial.
 - [ ] Validar em sessão autenticada como gerente ou administrador o painel de prevenção de perdas em desktop e celular, incluindo cards e atalhos.
 - [ ] Registrar evidência visual autenticada do estado sem permissão do painel de prevenção de perdas para operador ou estoquista.
+- [x] Disponibilizar um modelo CSV para acelerar o cadastro inicial de produtos em lote.
+- [x] Explicar as colunas, unidades e regras do modelo CSV diretamente na área de ferramentas.
+- [ ] Validar o download e a leitura do modelo CSV de cadastro inicial.
+- [ ] Validar que o botão Baixar modelo gera o arquivo `modelo-cadastro-produtos-mercadinho-pro.csv` com o cabeçalho correto.

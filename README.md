@@ -17,7 +17,7 @@ O **Mercadinho Pro** é um sistema web responsivo para organizar a rotina comerc
 | Caixa | Abertura, suprimento, acompanhamento de saldo físico e fechamento com conferência de diferença; sangria, ajustes e fechamento são restritos a gerente ou administrador. |
 | Cadastros | Fornecedores, clientes, categorias e administração de usuários, com escolha individual entre fidelidade por pontos ou crédito/desconto. |
 | Vendas e devoluções | Histórico de vendas, cancelamento no caixa original, devolução parcial ou total, estorno financeiro e recomposição auditável de estoque e lotes; cancelamento e devolução são restritos a gerente ou administrador. |
-| Ferramentas | Importação transacional de catálogo por CSV com prévia e validação, além de etiquetas A4 com preço e código de barras selecionáveis. |
+| Ferramentas | Importação transacional de catálogo por CSV com prévia e validação, modelo seguro para o cadastro inicial e etiquetas A4 com preço e código de barras selecionáveis. |
 | Metas | Criação de objetivos por período, acompanhamento de realizado, percentual e valor restante. |
 | Fidelidade | Saldos e extrato por cliente, ajustes auditáveis e uso de pontos ou crédito no PDV. |
 | Relatórios | Vendas, ticket médio, produtos mais vendidos, desempenho por categoria, margem, estoque em atenção, movimentações de caixa e exportação em CSV. |
