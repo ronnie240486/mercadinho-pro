@@ -10,7 +10,7 @@ O **Mercadinho Pro** é um sistema web responsivo para organizar a rotina comerc
 | Início guiado | Checklist automático para lojas sem produtos, orientando cadastro, entrada de estoque e abertura de caixa até o primeiro atendimento. |
 | Conferência de preço | Consulta independente por nome, código, leitor USB/Bluetooth ou câmera, exibindo preço de venda ou promoção ativa sem registrar venda, caixa ou movimentação de estoque. |
 | Produtos | Cadastro, consulta, busca, edição e exportação de produtos com códigos, categoria, preços, estoque mínimo e unidades comerciais padronizadas ou personalizadas. |
-| PDV | Busca por nome, código interno ou barras, carrinho, desconto, cliente e pagamentos por dinheiro, cartão ou PIX; leitura por leitor USB/Bluetooth e por câmera em navegadores compatíveis; uso de pontos ou crédito de fidelidade. |
+| PDV | Busca por nome, código interno ou barras, carrinho, desconto, cliente e pagamentos por dinheiro, cartão ou PIX; leitura por leitor USB/Bluetooth e por câmera em navegadores compatíveis; uso de pontos ou crédito de fidelidade; quantidade manual fracionada para peso, volume e medidas, com até três casas decimais. |
 | Estoque | Entradas, saídas operacionais, ajustes, devoluções, perdas, histórico e alertas de saldo mínimo. |
 | Compras | Recebimento de vários produtos por fornecedor, com atualização automática de custo e entrada de mercadoria no estoque. |
 | Inventário | Contagem por leitor de código de barras, ajuste auditável e histórico de divergências. |

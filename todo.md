@@ -110,3 +110,8 @@
 - [ ] Cobrir as regras de preço vigente e validar responsividade, estados vazio e erro da conferência.
 - [ ] Validar em sessão autenticada a tela de conferência de preço em desktop e celular, com registro visual da própria consulta.
 - [ ] Exercitar e registrar o estado de erro da conferência de preço para produtos ou promoções indisponíveis.
+- [x] Permitir ajustar diretamente no PDV a quantidade fracionada de produtos vendidos por peso, volume ou medida.
+- [x] Manter o incremento unitário para embalagens e impedir que quantidades informadas excedam o estoque disponível.
+- [x] Identificar no PDV as unidades compatíveis com venda fracionada e explicar o preenchimento ao operador.
+- [ ] Criar testes para a regra de unidades fracionáveis e validar o novo controle em desktop e celular.
+- [ ] Validar em sessão autenticada o controle de quantidade fracionada com produtos reais em desktop e celular.

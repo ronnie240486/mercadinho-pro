@@ -50,9 +50,22 @@ export const productUnitGroups = [
 ] as const;
 
 const knownUnits = new Set<string>(productUnitGroups.flatMap(group => group.options.map(option => option.value)));
+const fractionalUnits = new Set(["KG", "G", "MG", "L", "ML", "M", "CM", "M2", "M3"]);
 
 export function isKnownProductUnit(value: string) {
   return knownUnits.has(value.trim().toUpperCase());
+}
+
+export function isFractionalProductUnit(value: string) {
+  return fractionalUnits.has(value.trim().toUpperCase());
+}
+
+export function normalizeSaleQuantity(value: string | number, unit: string) {
+  const quantity = Number(String(value).replace(",", "."));
+  if (!Number.isFinite(quantity) || quantity <= 0) throw new Error("Informe uma quantidade maior que zero.");
+  const normalized = Math.round(quantity * 1000) / 1000;
+  if (!isFractionalProductUnit(unit) && !Number.isInteger(normalized)) throw new Error(`Produtos vendidos por ${unit} aceitam apenas quantidades inteiras.`);
+  return normalized;
 }
 
 export function normalizeProductUnit(selectedUnit: string, customUnit = "") {
