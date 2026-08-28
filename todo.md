@@ -104,3 +104,9 @@
 - [ ] Validar e documentar o checklist de início em computador e celular.
 - [ ] Validar em sessão autenticada o checklist de início com loja sem produtos em desktop e celular, registrando evidência visual.
 - [x] Confirmar no README a documentação do checklist de início após atualização.
+- [x] Criar uma conferência de preço para etiqueta de gôndola com busca por nome, código ou leitor de barras.
+- [x] Exibir na conferência o preço de venda vigente, promoção aplicável, unidade comercial e saldo de estoque.
+- [x] Adicionar acesso à conferência de preço na navegação operacional sem permitir registrar vendas por essa tela.
+- [ ] Cobrir as regras de preço vigente e validar responsividade, estados vazio e erro da conferência.
+- [ ] Validar em sessão autenticada a tela de conferência de preço em desktop e celular, com registro visual da própria consulta.
+- [ ] Exercitar e registrar o estado de erro da conferência de preço para produtos ou promoções indisponíveis.

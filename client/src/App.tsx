@@ -13,6 +13,7 @@ import Home from "./pages/Home";
 import Inventory from "./pages/Inventory";
 import NotFound from "./pages/NotFound";
 import Pdv from "./pages/Pdv";
+import PriceCheck from "./pages/PriceCheck";
 import Pricing from "./pages/Pricing";
 import Products from "./pages/Products";
 import Purchases from "./pages/Purchases";
@@ -34,6 +35,7 @@ function Router() {
         <Route path="/pdv" component={Pdv} />
         <Route path="/vendas" component={SalesHistory} />
         <Route path="/precos" component={Pricing} />
+        <Route path="/conferir-preco" component={PriceCheck} />
         <Route path="/produtos" component={Products} />
         <Route path="/compras" component={Purchases} />
         <Route path="/estoque" component={Stock} />
