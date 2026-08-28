@@ -88,3 +88,10 @@
 - [ ] Validar visualmente o bloqueio ou a mensagem de operador nas telas de Caixa, Vendas e PDV.
 - [ ] Validar e documentar as permissões de gerente e administrador para operações sensíveis.
 - [x] Confirmar a rota correta do histórico de vendas como `/vendas`; a tela 404 ocorreu apenas na URL inválida usada na validação visual.
+- [x] Criar um painel de prevenção de perdas com estoque crítico, validade, perdas, devoluções e cancelamentos.
+- [x] Exibir indicadores de risco e atalhos de ação no painel de prevenção de perdas.
+- [ ] Validar e documentar o painel de prevenção de perdas.
+- [x] Restringir o painel de prevenção de perdas a gerente e administrador, evitando erro genérico para outros perfis.
+- [x] Confirmar que o painel de prevenção de perdas está documentado no README oficial.
+- [ ] Validar em sessão autenticada como gerente ou administrador o painel de prevenção de perdas em desktop e celular, incluindo cards e atalhos.
+- [ ] Registrar evidência visual autenticada do estado sem permissão do painel de prevenção de perdas para operador ou estoquista.

@@ -22,6 +22,7 @@ import Stock from "./pages/Stock";
 import ShelfLife from "./pages/ShelfLife";
 import SalesHistory from "./pages/SalesHistory";
 import SalesGoals from "./pages/SalesGoals";
+import LossPrevention from "./pages/LossPrevention";
 import "./brand.css";
 import "./dark.css";
 
@@ -41,6 +42,7 @@ function Router() {
         <Route path="/caixa" component={Cash} />
         <Route path="/contas-a-pagar" component={AccountsPayable} />
         <Route path="/alertas" component={Alerts} />
+        <Route path="/prevencao-perdas" component={LossPrevention} />
         <Route path="/ferramentas" component={Utilities} />
         <Route path="/fidelidade" component={Loyalty} />
         <Route path="/metas" component={SalesGoals} />

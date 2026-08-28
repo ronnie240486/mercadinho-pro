@@ -21,6 +21,7 @@ O **Mercadinho Pro** é um sistema web responsivo para organizar a rotina comerc
 | Metas | Criação de objetivos por período, acompanhamento de realizado, percentual e valor restante. |
 | Fidelidade | Saldos e extrato por cliente, ajustes auditáveis e uso de pontos ou crédito no PDV. |
 | Relatórios | Vendas, ticket médio, produtos mais vendidos, desempenho por categoria, margem, estoque em atenção, movimentações de caixa e exportação em CSV. |
+| Prevenção de perdas | Radar operacional com estoque crítico, lotes próximos do vencimento, perdas, divergências de inventário, devoluções e cancelamentos recentes, com atalhos para as ações correspondentes. |
 
 ## Identidade e visualização
 

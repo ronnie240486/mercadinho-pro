@@ -38,6 +38,7 @@ import {
   PackageSearch,
   PackagePlus,
   PanelLeft,
+  ShieldAlert,
   ShoppingCart,
   Star,
   Sun,
@@ -63,6 +64,7 @@ const menuItems = [
   { icon: WalletCards, label: "Caixa", path: "/caixa" },
   { icon: WalletCards, label: "Contas a pagar", path: "/contas-a-pagar" },
   { icon: BellRing, label: "Alertas", path: "/alertas" },
+  { icon: ShieldAlert, label: "Prevenção de perdas", path: "/prevencao-perdas" },
   { icon: PackagePlus, label: "Ferramentas", path: "/ferramentas" },
   { icon: Target, label: "Metas de vendas", path: "/metas" },
   { icon: Star, label: "Fidelidade", path: "/fidelidade" },
@@ -163,6 +165,7 @@ function DashboardLayoutContent({
   }, [isResizing, setSidebarWidth]);
 
   const displayRole = user?.role === "admin" ? "Administrador" : user?.role === "manager" ? "Gerente" : user?.role === "stockist" ? "Estoquista" : "Operador";
+  const visibleMenuItems = menuItems.filter(item => item.path !== "/prevencao-perdas" || user?.role === "admin" || user?.role === "manager");
 
   return (
     <>
@@ -192,7 +195,7 @@ function DashboardLayoutContent({
           <SidebarContent className="gap-0 px-3 py-5">
             {!isCollapsed && <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-white/45">Operação</p>}
             <SidebarMenu className="gap-1">
-              {menuItems.map(item => {
+              {visibleMenuItems.map(item => {
                 const isActive = item.path === location;
                 return (
                   <SidebarMenuItem key={item.path}>
