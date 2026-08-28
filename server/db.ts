@@ -25,6 +25,8 @@ import {
   suppliers,
   type InsertUser,
   users,
+  whatsappOrderItems,
+  whatsappOrders,
 } from "../drizzle/schema";
 import { allocateBatchRestoration, applyStockMovement, calculateCashBalance, calculateLoyaltyRedemption, calculateSaleTotals, calculateSuggestedReplenishment, formatBatchConsumption, normalizeBarcodeCode, requireBatchCoverage, resolveAccountPayableStatus, type PaymentMethod } from "./businessUtils";
 import { ENV } from "./_core/env";
@@ -603,6 +605,62 @@ export async function listActivePromotions() {
   const db = await requireDb();
   const today = new Date().toISOString().slice(0, 10);
   return db.select({ productId: promotions.productId, name: promotions.name, promotionalPrice: promotions.promotionalPrice }).from(promotions).where(and(eq(promotions.active, true), sql`${promotions.startsOn} <= ${today}`, sql`${promotions.endsOn} >= ${today}`));
+}
+
+export async function listWhatsappOrders() {
+  const db = await requireDb();
+  return db.select({ id: whatsappOrders.id, code: whatsappOrders.code, customerName: whatsappOrders.customerName, customerPhone: whatsappOrders.customerPhone, fulfillment: whatsappOrders.fulfillment, paymentMethod: whatsappOrders.paymentMethod, status: whatsappOrders.status, totalAmount: whatsappOrders.totalAmount, createdAt: whatsappOrders.createdAt }).from(whatsappOrders).orderBy(desc(whatsappOrders.createdAt)).limit(50);
+}
+
+export async function createWhatsappOrder(input: {
+  userId: number;
+  customerName: string;
+  customerPhone?: string;
+  fulfillment: "pickup" | "delivery";
+  deliveryAddress?: string;
+  paymentMethod: "cash" | "debit" | "credit" | "pix";
+  notes?: string;
+  items: Array<{ productId: number; quantity: number }>;
+}) {
+  const db = await requireDb();
+  if (!input.items.length) throw new Error("Inclua ao menos um produto no pedido.");
+  if (input.fulfillment === "delivery" && !input.deliveryAddress?.trim()) throw new Error("Informe o endereço para entrega.");
+  const quantitiesByProduct = new Map<number, number>();
+  for (const item of input.items) {
+    if (!Number.isFinite(item.quantity) || item.quantity <= 0) throw new Error("A quantidade do pedido deve ser positiva.");
+    quantitiesByProduct.set(item.productId, (quantitiesByProduct.get(item.productId) ?? 0) + item.quantity);
+  }
+  const normalizedItems = Array.from(quantitiesByProduct, ([productId, quantity]) => ({ productId, quantity }));
+  const productIds = normalizedItems.map(item => item.productId);
+  const productRows = await db.select().from(products).where(and(inArray(products.id, productIds), eq(products.active, true)));
+  if (productRows.length !== productIds.length) throw new Error("Um ou mais produtos não estão disponíveis.");
+  const productsById = new Map(productRows.map(product => [product.id, product]));
+  const activePromotions = await listActivePromotions();
+  const promotionsByProductId = new Map(activePromotions.map(promotion => [promotion.productId, promotion]));
+  const detailedItems = normalizedItems.map(item => {
+    const product = productsById.get(item.productId);
+    if (!product) throw new Error("Produto não encontrado.");
+    if (item.quantity > toNumber(product.stockQuantity) + 0.0009) throw new Error(`Estoque insuficiente para ${product.name}.`);
+    const promotion = promotionsByProductId.get(product.id);
+    const unitPrice = promotion ? toNumber(promotion.promotionalPrice) : toNumber(product.salePrice);
+    return { ...item, product, unitPrice, totalAmount: Math.round(item.quantity * unitPrice * 100) / 100 };
+  });
+  const totalAmount = Math.round(detailedItems.reduce((total, item) => total + item.totalAmount, 0) * 100) / 100;
+  const code = `W-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
+
+  await db.transaction(async tx => {
+    await tx.insert(whatsappOrders).values({ code, customerName: input.customerName.trim(), customerPhone: input.customerPhone?.trim() || null, fulfillment: input.fulfillment, deliveryAddress: input.fulfillment === "delivery" ? input.deliveryAddress?.trim() || null : null, paymentMethod: input.paymentMethod, notes: input.notes?.trim() || null, totalAmount: decimal(totalAmount), createdByUserId: input.userId });
+    const [order] = await tx.select({ id: whatsappOrders.id }).from(whatsappOrders).where(eq(whatsappOrders.code, code)).limit(1);
+    if (!order) throw new Error("Não foi possível registrar o pedido.");
+    await tx.insert(whatsappOrderItems).values(detailedItems.map(item => ({ whatsappOrderId: order.id, productId: item.product.id, productName: item.product.name, quantity: decimal(item.quantity, 3), unit: item.product.unit, unitPrice: decimal(item.unitPrice), totalAmount: decimal(item.totalAmount) })));
+  });
+  return { success: true, code, totalAmount, fulfillment: input.fulfillment, paymentMethod: input.paymentMethod, customerName: input.customerName.trim(), customerPhone: input.customerPhone?.trim() || "", deliveryAddress: input.fulfillment === "delivery" ? input.deliveryAddress?.trim() || "" : "", notes: input.notes?.trim() || "", items: detailedItems.map(item => ({ name: item.product.name, quantity: item.quantity, unit: item.product.unit, unitPrice: item.unitPrice, totalAmount: item.totalAmount })) } as const;
+}
+
+export async function markWhatsappOrderSent(orderCode: string) {
+  const db = await requireDb();
+  await db.update(whatsappOrders).set({ status: "sent" }).where(eq(whatsappOrders.code, orderCode));
+  return { success: true } as const;
 }
 
 export async function createPromotion(input: { productId: number; name: string; promotionalPrice: number; startsOn: string; endsOn: string }) {

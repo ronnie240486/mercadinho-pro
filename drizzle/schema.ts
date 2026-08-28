@@ -142,6 +142,41 @@ export const purchaseItems = mysqlTable(
   table => [index("purchase_items_purchase_idx").on(table.purchaseId), index("purchase_items_product_idx").on(table.productId)],
 );
 
+export const whatsappOrders = mysqlTable(
+  "whatsappOrders",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    code: varchar("code", { length: 32 }).notNull().unique(),
+    customerName: varchar("customerName", { length: 180 }).notNull(),
+    customerPhone: varchar("customerPhone", { length: 32 }),
+    fulfillment: mysqlEnum("fulfillment", ["pickup", "delivery"]).default("pickup").notNull(),
+    deliveryAddress: varchar("deliveryAddress", { length: 500 }),
+    paymentMethod: mysqlEnum("paymentMethod", ["cash", "debit", "credit", "pix"]).notNull(),
+    status: mysqlEnum("status", ["draft", "sent", "confirmed", "cancelled"]).default("draft").notNull(),
+    totalAmount: decimal("totalAmount", { precision: 12, scale: 2 }).default("0.00").notNull(),
+    notes: text("notes"),
+    createdByUserId: int("createdByUserId").notNull().references(() => users.id),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [index("whatsapp_orders_created_at_idx").on(table.createdAt), index("whatsapp_orders_status_idx").on(table.status)],
+);
+
+export const whatsappOrderItems = mysqlTable(
+  "whatsappOrderItems",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    whatsappOrderId: int("whatsappOrderId").notNull().references(() => whatsappOrders.id, { onDelete: "cascade" }),
+    productId: int("productId").notNull().references(() => products.id),
+    productName: varchar("productName", { length: 180 }).notNull(),
+    quantity: decimal("quantity", { precision: 12, scale: 3 }).notNull(),
+    unit: varchar("unit", { length: 12 }).notNull(),
+    unitPrice: decimal("unitPrice", { precision: 12, scale: 2 }).notNull(),
+    totalAmount: decimal("totalAmount", { precision: 12, scale: 2 }).notNull(),
+  },
+  table => [index("whatsapp_order_items_order_idx").on(table.whatsappOrderId), index("whatsapp_order_items_product_idx").on(table.productId)],
+);
+
 export const productBatches = mysqlTable(
   "productBatches",
   {

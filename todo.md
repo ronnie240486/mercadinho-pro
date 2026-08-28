@@ -126,3 +126,19 @@
 - [x] Adicionar testes automatizados e revisar o formulário de compras em desktop e celular.
 - [ ] Validar em sessão autenticada o formulário de compras em desktop e celular, confirmando os campos opcionais de lote e validade por item.
 - [ ] Registrar evidência visual autenticada do recebimento de compra com lote e validade preenchidos corretamente.
+- [x] Adicionar comprovante de venda otimizado para impressão térmica, incluindo produtos, pagamentos e totais.
+- [ ] Preparar acionamento de gaveta de dinheiro associado à impressão do comprovante em equipamentos compatíveis.
+- [ ] Incluir suporte a leitura de peso por balança compatível e tratamento de entrada manual quando não houver conexão direta.
+- [x] Criar pedidos para retirada ou entrega via WhatsApp, sem crediário e com opções de pagamento por dinheiro, Pix ou cartão.
+- [x] Criar uma área de configuração para dados de WhatsApp e preferências de equipamentos, sem exigir dados fictícios.
+- [x] Cobrir regras das novas integrações com testes e validar as telas em desktop e celular.
+- [ ] Validar em sessão autenticada as telas Operação conectada e Pedidos WhatsApp em desktop e celular, registrando evidência visual real das novas integrações.
+- [x] Criar uma central universal de operação para configurar posteriormente impressora, gaveta, balança e WhatsApp.
+- [x] Oferecer impressão de comprovante pela caixa de diálogo do navegador sem exigir marca de impressora.
+- [x] Preparar atalhos desativados e orientações para acionamento de gaveta e leitura de balança até o equipamento ser conectado.
+- [x] Adicionar controles explícitos desativados para abrir gaveta e ler balança na central de operação, com indicação visual de indisponibilidade até configurar o equipamento.
+- [x] Validar com teste e interface que os controles de gaveta e balança permanecem bloqueados sem hardware configurado e exibem orientação correta ao operador.
+- [ ] Validar em sessão autenticada a central de operação com os botões desativados de gaveta e balança, confirmando a orientação exibida ao operador em desktop e celular.
+- [x] Permitir configurar futuramente o telefone do WhatsApp e montar pedidos com retirada ou entrega e pagamento em dinheiro, Pix ou cartão.
+- [ ] Validar em sessão autenticada um pedido real de retirada ou entrega, com mensagem aberta no WhatsApp e sem baixa automática de estoque ou caixa.
+- [ ] Validar em sessão autenticada a impressão de comprovante após venda real em uma impressora disponível no navegador.

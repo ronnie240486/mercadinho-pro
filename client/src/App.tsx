@@ -24,6 +24,8 @@ import ShelfLife from "./pages/ShelfLife";
 import SalesHistory from "./pages/SalesHistory";
 import SalesGoals from "./pages/SalesGoals";
 import LossPrevention from "./pages/LossPrevention";
+import OperationSetup from "./pages/OperationSetup";
+import WhatsAppOrders from "./pages/WhatsAppOrders";
 import "./brand.css";
 import "./dark.css";
 
@@ -45,6 +47,8 @@ function Router() {
         <Route path="/contas-a-pagar" component={AccountsPayable} />
         <Route path="/alertas" component={Alerts} />
         <Route path="/prevencao-perdas" component={LossPrevention} />
+        <Route path="/operacao-conectada" component={OperationSetup} />
+        <Route path="/pedidos-whatsapp" component={WhatsAppOrders} />
         <Route path="/ferramentas" component={Utilities} />
         <Route path="/fidelidade" component={Loyalty} />
         <Route path="/metas" component={SalesGoals} />

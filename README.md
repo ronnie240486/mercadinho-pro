@@ -24,6 +24,8 @@ O **Mercadinho Pro** é um sistema web responsivo para organizar a rotina comerc
 | Fidelidade | Saldos e extrato por cliente, ajustes auditáveis e uso de pontos ou crédito no PDV. |
 | Relatórios | Vendas, ticket médio, produtos mais vendidos, desempenho por categoria, margem, estoque em atenção, movimentações de caixa com devoluções destacadas como saída e exportação em CSV. |
 | Prevenção de perdas | Radar operacional com estoque crítico, lotes próximos do vencimento, perdas, divergências de inventário, devoluções e cancelamentos recentes, com atalhos para as ações correspondentes. |
+| Operação conectada | Central universal para definir largura de comprovante térmico, preferência de gaveta, modo de balança e telefone de atendimento, sem exigir marca ou equipamento previamente instalado. |
+| Pedidos pelo WhatsApp | Pedidos de retirada ou entrega com itens, preço vigente, saldo conferido e pagamento por dinheiro, Pix ou cartão; o pedido não baixa estoque nem registra caixa até ser atendido no PDV. |
 
 ## Identidade e visualização
 
@@ -45,7 +47,7 @@ O sistema usa o logotipo oficial fornecido para o Mercadinho Pro, presente na en
 | Prioridade | Incremento |
 |---|---|
 | Alta | Validação autenticada em operação real dos fluxos de cancelamento, devolução, importação e fidelidade. |
-| Média | Comprovante de venda, compra sugerida e recebimento de compras por planilha. |
+| Média | Integração direta de impressora térmica, gaveta e balança após definição de marca, modelo e conexão do equipamento. |
 | Média | Integração com impressora térmica e equipamentos de operação quando necessário. |
 | Evolução | Integração contábil e relatórios financeiros gerenciais. |
 
