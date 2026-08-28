@@ -2,14 +2,14 @@ import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { universalHardwareControls } from "@/lib/hardwareAvailability";
-import { defaultOperationSettings, listOperationStations, loadOperationSettings, saveOperationSettings, type OperationSettings } from "@/lib/operationSettings";
+import { defaultOperationSettings, getActiveOperationStation, listOperationStations, loadOperationSettings, saveOperationSettings, setActiveOperationStation, type OperationSettings } from "@/lib/operationSettings";
 import { printThermalReceipt } from "@/lib/thermalReceipt";
 import { Cable, CheckCircle2, CircleAlert, MessageCircle, Printer, Scale, Store, WalletCards } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export default function OperationSetup() {
-  const [stationName, setStationName] = useState(defaultOperationSettings.stationName);
+  const [stationName, setStationName] = useState(() => getActiveOperationStation());
   const [savedStations, setSavedStations] = useState<string[]>(() => listOperationStations());
   const [settings, setSettings] = useState<OperationSettings>(() => loadOperationSettings());
   const update = <Key extends keyof OperationSettings>(key: Key, value: OperationSettings[Key]) => setSettings(current => ({ ...current, [key]: value }));
@@ -24,11 +24,13 @@ export default function OperationSetup() {
 
   const selectStation = (nextName: string) => {
     const safeName = nextName.trim() || defaultOperationSettings.stationName;
+    setActiveOperationStation(safeName);
     setStationName(safeName);
     setSettings(loadOperationSettings(safeName));
   };
   const renameStation = () => {
     const nextName = stationName.trim() || defaultOperationSettings.stationName;
+    setActiveOperationStation(nextName);
     setStationName(nextName);
     setSettings(current => ({ ...current, stationName: nextName }));
   };

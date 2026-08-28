@@ -148,3 +148,7 @@
 - [ ] Cobrir o isolamento do perfil local com testes e validar a central de operação em desktop e celular.
 - [x] Cobrir em testes automatizados o isolamento dos perfis locais por nome de estação, incluindo WhatsApp e largura de papel.
 - [ ] Validar em sessão autenticada o perfil de estação em desktop e celular, registrando a alternância de preferências entre instalações.
+- [x] Persistir a estação ativa deste computador e usá-la ao carregar as preferências de impressão no PDV.
+- [x] Cobrir em testes a alteração e a leitura do perfil ativo entre estações locais.
+- [x] Usar a estação ativa também ao carregar o número de WhatsApp nos pedidos, mantendo o atendimento separado por instalação.
+- [ ] Validar em sessão autenticada a central de operação com controles e orientações por estação após aplicar o perfil ativo.

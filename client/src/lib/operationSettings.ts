@@ -14,12 +14,22 @@ export const defaultOperationSettings: OperationSettings = {
   whatsappNumber: "",
 };
 
+const ACTIVE_STATION_KEY = "mercadinho-pro-active-station";
+
 export function getOperationSettingsKey(stationName: string) {
   const normalized = stationName.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   return `mercadinho-pro-operation-settings:${normalized || "caixa-principal"}`;
 }
 
-export function loadOperationSettings(stationName = defaultOperationSettings.stationName): OperationSettings {
+export function getActiveOperationStation() {
+  return localStorage.getItem(ACTIVE_STATION_KEY)?.trim() || defaultOperationSettings.stationName;
+}
+
+export function setActiveOperationStation(stationName: string) {
+  localStorage.setItem(ACTIVE_STATION_KEY, stationName.trim() || defaultOperationSettings.stationName);
+}
+
+export function loadOperationSettings(stationName = getActiveOperationStation()): OperationSettings {
   try {
     const stored = localStorage.getItem(getOperationSettingsKey(stationName));
     if (!stored) return { ...defaultOperationSettings, stationName };
@@ -38,6 +48,7 @@ export function loadOperationSettings(stationName = defaultOperationSettings.sta
 
 export function saveOperationSettings(settings: OperationSettings) {
   localStorage.setItem(getOperationSettingsKey(settings.stationName), JSON.stringify(settings));
+  setActiveOperationStation(settings.stationName);
 }
 
 export function listOperationStations() {

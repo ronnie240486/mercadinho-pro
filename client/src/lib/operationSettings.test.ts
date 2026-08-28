@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { defaultOperationSettings, getOperationSettingsKey, listOperationStations, loadOperationSettings, saveOperationSettings } from "./operationSettings";
+import { defaultOperationSettings, getActiveOperationStation, getOperationSettingsKey, listOperationStations, loadOperationSettings, saveOperationSettings, setActiveOperationStation } from "./operationSettings";
 
 function createLocalStorage() {
   const values = new Map<string, string>();
@@ -33,5 +33,13 @@ describe("perfil local de operação", () => {
     expect(loadOperationSettings("Caixa 1")).toMatchObject({ stationName: "Caixa 1", receiptWidth: "58", whatsappNumber: "5511999990001" });
     expect(loadOperationSettings("Caixa 2")).toMatchObject({ stationName: "Caixa 2", receiptWidth: "80", whatsappNumber: "5511999990002" });
     expect(listOperationStations()).toEqual(["Caixa 1", "Caixa 2"]);
+  });
+
+  it("usa a estação ativa ao carregar o perfil padrão da instalação", () => {
+    saveOperationSettings({ ...defaultOperationSettings, stationName: "Balcão", receiptWidth: "58", whatsappNumber: "5511999990003" });
+    setActiveOperationStation("Balcão");
+
+    expect(getActiveOperationStation()).toBe("Balcão");
+    expect(loadOperationSettings()).toMatchObject({ stationName: "Balcão", receiptWidth: "58", whatsappNumber: "5511999990003" });
   });
 });
