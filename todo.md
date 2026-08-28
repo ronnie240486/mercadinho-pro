@@ -115,3 +115,7 @@
 - [x] Identificar no PDV as unidades compatíveis com venda fracionada e explicar o preenchimento ao operador.
 - [ ] Criar testes para a regra de unidades fracionáveis e validar o novo controle em desktop e celular.
 - [ ] Validar em sessão autenticada o controle de quantidade fracionada com produtos reais em desktop e celular.
+- [x] Representar devoluções como saída financeira no relatório de movimentação de caixa.
+- [x] Incluir devoluções no CSV operacional e distinguir seus valores de vendas, suprimentos e sangrias.
+- [x] Criar teste para a sinalização financeira de devolução e validar o relatório responsivo.
+- [ ] Validar em sessão autenticada o relatório de caixa em desktop e celular, confirmando devoluções destacadas como saída financeira.
