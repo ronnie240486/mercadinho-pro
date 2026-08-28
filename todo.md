@@ -175,6 +175,6 @@
 - [ ] Validar em computador Windows 7 real a instalação legada com WebView2 antes de prometer compatibilidade de produção nesse sistema.
 - [ ] Resolver ou solicitar a liberação do limite de serviços de infraestrutura que bloqueou a implantação publicada.
 - [ ] Confirmar a disponibilidade da nova versão após a recuperação do limite de implantação.
-- [ ] Verificar o estado do Git e se o repositório Mercadinho Pro já possui remoto no GitHub.
-- [ ] Publicar em repositório privado todo o frontend, backend, esquema, migrações, testes e documentação do Mercadinho Pro.
-- [ ] Confirmar no GitHub que arquivos sensíveis e variáveis de ambiente não foram enviados.
+- [x] Verificar o estado do Git e se o repositório Mercadinho Pro já possui remoto no GitHub.
+- [x] Publicar em repositório privado todo o frontend, backend, esquema, migrações, testes e documentação do Mercadinho Pro.
+- [x] Confirmar no GitHub que arquivos sensíveis e variáveis de ambiente não foram enviados.
